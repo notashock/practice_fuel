@@ -4,6 +4,7 @@ import Login from "./pages/auth/Login";
 import Unauthorized from "./pages/Unauthorized";
 
 import AdminDashboard from "./pages/admin/AdminDashboard";
+import Users from "./pages/admin/Users";
 
 import DriverDashboard from "./pages/driver/DriverDashboard";
 import FuelLogs from "./pages/driver/FuelLogs";
@@ -49,6 +50,16 @@ function App() {
             </ProtectedRoute>
           }
         />
+        <Route
+  path="/admin/users"
+  element={
+    <ProtectedRoute
+      allowedRoles={["ADMIN"]}
+    >
+      <Users />
+    </ProtectedRoute>
+  }
+/>
 
         {/* FLEET MANAGER */}
 
