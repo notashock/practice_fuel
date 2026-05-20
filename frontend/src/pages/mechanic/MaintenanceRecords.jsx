@@ -222,16 +222,24 @@ export default function MaintenanceRecords() {
                 Select Type
               </option>
 
-              <option value="PREVENTIVE">
-                PREVENTIVE
+              <option value="OIL_CHANGE">
+                OIL_CHANGE
               </option>
 
-              <option value="BREAKDOWN">
-                BREAKDOWN
+              <option value="TIRE_ROTATION">
+                TIRE_ROTATION
               </option>
 
-              <option value="INSPECTION">
-                INSPECTION
+              <option value="ENGINE_REPAIR">
+                ENGINE_REPAIR
+              </option>
+
+              <option value="BRAKE_SERVICE">
+                BRAKE_SERVICE
+              </option>
+
+              <option value="GENERAL">
+                GENERAL
               </option>
 
             </select>
