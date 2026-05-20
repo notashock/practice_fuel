@@ -45,19 +45,28 @@ public class CostController {
     @GetMapping("/summary")
     @PreAuthorize("hasAnyRole('FLEET_MANAGER', 'ADMIN')")
     public ResponseEntity<Map<String, Object>> getCostSummary(
-            @RequestParam Long vehicleId,
-            @RequestParam int year
+            @RequestParam(required = false) Long vehicleId,
+            @RequestParam(required = false) Integer year
     ) {
-        // We explicitly pass the MAINTENANCE enum to the query now
-        Double totalMaintenanceCost = costRepository.getTotalCostByVehicleAndTypeAndYear(
-                vehicleId,
-                com.fuel_monitor.server.models.enums.CostType.MAINTENANCE,
-                year
+        int targetYear = (year != null) ? year : java.time.Year.now().getValue();
+
+        Double totalMaintenanceCost;
+        if (vehicleId != null) {
+            totalMaintenanceCost = costRepository.getTotalCostByVehicleAndTypeAndYear(
+                    vehicleId,
+                    com.fuel_monitor.server.models.enums.CostType.MAINTENANCE,
+                    targetYear
             );
+        } else {
+            totalMaintenanceCost = costRepository.getTotalCostByTypeAndYear(
+                    com.fuel_monitor.server.models.enums.CostType.MAINTENANCE,
+                    targetYear
+            );
+        }
 
         Map<String, Object> summary = new HashMap<>();
-        summary.put("vehicleId", vehicleId);
-        summary.put("year", year);
+        summary.put("vehicleId", vehicleId); // can be null for all vehicles
+        summary.put("year", targetYear);
         summary.put("totalMaintenanceCost", totalMaintenanceCost != null ? totalMaintenanceCost : 0.0);
 
         return ResponseEntity.ok(summary);

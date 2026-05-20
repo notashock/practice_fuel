@@ -20,5 +20,13 @@ public interface VehicleCostRepository extends JpaRepository<VehicleCost, Long> 
             @Param("year") int year
     );
 
+    @Query("SELECT SUM(vc.amount) FROM VehicleCost vc " +
+            "WHERE vc.costType = :costType " +
+            "AND YEAR(vc.recordedAt) = :year")
+    Double getTotalCostByTypeAndYear(
+            @Param("costType") CostType costType,
+            @Param("year") int year
+    );
+
     java.util.List<VehicleCost> findByVehicleId(Long vehicleId);
 }
