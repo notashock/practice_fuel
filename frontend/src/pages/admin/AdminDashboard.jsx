@@ -11,7 +11,8 @@ export default function AdminDashboard() {
 
   const [issues, setIssues] = useState([]);
 
-  const [costs, setCosts] = useState([]);
+
+  const [summary, setSummary] = useState(null);
 
   const [loading, setLoading] = useState(true);
 
@@ -23,7 +24,6 @@ export default function AdminDashboard() {
         usersResponse,
         vehiclesResponse,
         issuesResponse,
-        costsResponse,
       ] = await Promise.all([
 
         API.get("/users"),
@@ -32,17 +32,28 @@ export default function AdminDashboard() {
 
         API.get("/issues/open"),
 
-        API.get("/costs/summary"),
 
       ]);
 
       setUsers(usersResponse.data);
 
       setVehicles(vehiclesResponse.data);
+      if (vehiclesResponse.data.length > 0) {
+
+  const firstVehicleId =
+    vehiclesResponse.data[0].id;
+
+  const summaryResponse = await API.get(
+
+    `/costs/summary?vehicleId=${firstVehicleId}&year=${new Date().getFullYear()}`
+  );
+
+  setSummary(summaryResponse.data);
+}
 
       setIssues(issuesResponse.data);
 
-      setCosts(costsResponse.data);
+
 
     } catch (error) {
 
@@ -91,10 +102,8 @@ export default function AdminDashboard() {
 
   // Cost Summary
 
-  const totalExpenses = costs.reduce(
-    (acc, item) => acc + item.amount,
-    0
-  );
+const totalExpenses =
+  summary?.totalMaintenanceCost || 0;
 
   if (loading) {
 

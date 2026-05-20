@@ -11,7 +11,7 @@ export default function Costs() {
 
   const [costs, setCosts] = useState([]);
 
-  const [summary, setSummary] = useState([]);
+  const [summary, setSummary] = useState(null);
 
   const [loading, setLoading] = useState(false);
 
@@ -33,12 +33,13 @@ export default function Costs() {
 
   // Fetch Summary
 
-  const fetchSummary = async () => {
+  const fetchSummary = async (vehicleId) => {
 
     try {
 
       const response = await API.get(
-        "/costs/summary"
+
+        `/costs/summary?vehicleId=${vehicleId}&year=${new Date().getFullYear()}`
       );
 
       setSummary(response.data);
@@ -77,8 +78,6 @@ export default function Costs() {
 
     fetchVehicles();
 
-    fetchSummary();
-
   }, []);
 
   const handleVehicleChange = (e) => {
@@ -88,20 +87,27 @@ export default function Costs() {
     setSelectedVehicle(vehicleId);
 
     if (vehicleId) {
+
       fetchVehicleCosts(vehicleId);
+
+      fetchSummary(vehicleId);
     }
   };
 
-  // Total Summary Cost
+  // Total Expenses
 
-  const totalExpenses = summary.reduce(
+  const totalExpenses = costs.reduce(
+
     (acc, item) => acc + item.amount,
+
     0
   );
 
   return (
 
     <DashboardLayout>
+
+      {/* Header */}
 
       <div className="mb-8">
 
@@ -122,7 +128,7 @@ export default function Costs() {
         <div className="bg-white p-6 rounded-xl shadow-md">
 
           <p className="text-gray-500">
-            Total Expenses
+            Total Vehicle Expenses
           </p>
 
           <h2 className="text-4xl font-bold text-blue-600 mt-2">
@@ -138,7 +144,7 @@ export default function Costs() {
           </p>
 
           <h2 className="text-4xl font-bold mt-2">
-            {summary.length}
+            {costs.length}
           </h2>
 
         </div>
@@ -266,11 +272,13 @@ export default function Costs() {
                 </td>
 
                 <td className="p-4">
+
                   {
                     new Date(
                       cost.recordedAt
                     ).toLocaleDateString()
                   }
+
                 </td>
 
                 <td className="p-4">
@@ -312,7 +320,7 @@ export default function Costs() {
         <div className="p-6 border-b">
 
           <h2 className="text-2xl font-bold">
-            Fleet Cost Summary
+            Maintenance Cost Summary
           </h2>
 
         </div>
@@ -324,15 +332,15 @@ export default function Costs() {
             <tr>
 
               <th className="p-4 text-left">
-                Vehicle
+                Vehicle ID
               </th>
 
               <th className="p-4 text-left">
-                Cost Type
+                Year
               </th>
 
               <th className="p-4 text-left">
-                Amount
+                Total Maintenance Cost
               </th>
 
             </tr>
@@ -341,31 +349,25 @@ export default function Costs() {
 
           <tbody>
 
-            {summary.map((item) => (
+            {summary && (
 
-              <tr
-                key={item.id}
-                className="border-b hover:bg-gray-50"
-              >
+              <tr className="border-b hover:bg-gray-50">
 
                 <td className="p-4">
-                  {
-                    item.vehicle
-                      ?.registrationNumber
-                  }
+                  {summary.vehicleId}
                 </td>
 
                 <td className="p-4">
-                  {item.costType}
+                  {summary.year}
                 </td>
 
                 <td className="p-4 font-semibold">
-                  ₹ {item.amount}
+                  ₹ {summary.totalMaintenanceCost}
                 </td>
 
               </tr>
 
-            ))}
+            )}
 
           </tbody>
 

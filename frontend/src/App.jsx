@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 
 import Login from "./pages/auth/Login";
+import Register from "./pages/auth/Register";
 import Unauthorized from "./pages/Unauthorized";
 
 import AdminDashboard from "./pages/admin/AdminDashboard";
@@ -13,6 +14,7 @@ import ReportIssue from "./pages/driver/ReportIssue";
 
 import MechanicDashboard from "./pages/mechanic/MechanicDashboard";
 import Issues from "./pages/mechanic/Issues";
+import MaintenanceRecords from "./pages/mechanic/MaintenanceRecords";
 
 import ProtectedRoute from "./routes/ProtectedRoute";
 
@@ -34,6 +36,8 @@ function App() {
         {/* PUBLIC */}
 
         <Route path="/" element={<Login />} />
+        <Route path="/register" element={<Register/>} />
+        <Route path="/login" element={<Login />} />
 
         <Route
           path="/unauthorized"
@@ -119,7 +123,7 @@ function App() {
   path="/fleet/costs"
   element={
     <ProtectedRoute
-      allowedRoles={["FLEET_MANAGER"]}
+      allowedRoles={["FLEET_MANAGER","ADMIN"]}
     >
       <Costs />
     </ProtectedRoute>
@@ -183,6 +187,16 @@ function App() {
       allowedRoles={["MECHANIC"]}
     >
       <Issues />
+    </ProtectedRoute>
+  }
+/>
+<Route
+  path="/mechanic/maintenance-records"
+  element={
+    <ProtectedRoute
+      allowedRoles={["MECHANIC"]}
+    >
+      <MaintenanceRecords />
     </ProtectedRoute>
   }
 />

@@ -36,7 +36,7 @@ export default function Sidebar() {
             </Link>
 
             <Link
-              to="/admin/costs"
+              to="/fleet/costs"
               className="block hover:bg-gray-800 p-3 rounded-lg"
             >
               Costs
@@ -124,7 +124,7 @@ export default function Sidebar() {
             </Link>
 
             <Link
-              to="/mechanic/maintenance"
+              to="/mechanic/maintenance-records"
               className="block hover:bg-gray-800 p-3 rounded-lg"
             >
               Maintenance
