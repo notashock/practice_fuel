@@ -11,6 +11,7 @@ import AddFuelLog from "./pages/driver/AddFuelLog";
 import ReportIssue from "./pages/driver/ReportIssue";
 
 import MechanicDashboard from "./pages/mechanic/MechanicDashboard";
+import Issues from "./pages/mechanic/Issues";
 
 import ProtectedRoute from "./routes/ProtectedRoute";
 
@@ -153,6 +154,16 @@ function App() {
             </ProtectedRoute>
           }
         />
+        <Route
+  path="/mechanic/issues"
+  element={
+    <ProtectedRoute
+      allowedRoles={["MECHANIC"]}
+    >
+      <Issues />
+    </ProtectedRoute>
+  }
+/>
 
       </Routes>
 
