@@ -4,12 +4,18 @@ import Login from "./pages/auth/Login";
 import Unauthorized from "./pages/Unauthorized";
 
 import AdminDashboard from "./pages/admin/AdminDashboard";
-import FleetDashboard from "./pages/fleet/FleetDashboard";
+
 import DriverDashboard from "./pages/driver/DriverDashboard";
 import MechanicDashboard from "./pages/mechanic/MechanicDashboard";
 
 import ProtectedRoute from "./routes/ProtectedRoute";
 
+import FleetDashboard from "./pages/fleet/FleetDashboard";
+import Vehicles from "./pages/fleet/Vehicles";
+import AddVehicle from "./pages/fleet/AddVehicle";
+import VehicleDetails from "./pages/fleet/VehicleDetails";
+import Maintenance from "./pages/fleet/Maintenance";
+import ScheduleMaintenance from "./pages/fleet/ScheduleMaintenance";
 function App() {
 
   return (
@@ -48,7 +54,50 @@ function App() {
             </ProtectedRoute>
           }
         />
-
+        <Route
+  path="/fleet/vehicles"
+  element={
+    <ProtectedRoute allowedRoles={["FLEET_MANAGER"]}>
+      <Vehicles />
+    </ProtectedRoute>
+  }
+/>
+<Route
+  path="/fleet/vehicles/add"
+  element={
+    <ProtectedRoute allowedRoles={["FLEET_MANAGER"]}>
+      <AddVehicle />
+    </ProtectedRoute>
+  }
+/>
+<Route
+  path="/fleet/vehicles/:id"
+  element={
+    <ProtectedRoute allowedRoles={["FLEET_MANAGER"]}>
+      <VehicleDetails />
+    </ProtectedRoute>
+  }
+/>
+<Route
+  path="/fleet/maintenance"
+  element={
+    <ProtectedRoute
+      allowedRoles={["FLEET_MANAGER"]}
+    >
+      <Maintenance />
+    </ProtectedRoute>
+  }
+/>
+<Route
+  path="/fleet/maintenance/schedule"
+  element={
+    <ProtectedRoute
+      allowedRoles={["FLEET_MANAGER"]}
+    >
+      <ScheduleMaintenance />
+    </ProtectedRoute>
+  }
+/>
         {/* DRIVER */}
 
         <Route
