@@ -22,7 +22,7 @@ const [selectedMaintenance, setSelectedMaintenance] = useState(null);
     try {
 
       const response = await API.get(
-        "/maintenance/overdue"
+        "/maintenance/active"
       );
 
       setMaintenances(response.data);
@@ -48,7 +48,7 @@ const [selectedMaintenance, setSelectedMaintenance] = useState(null);
       <div className="flex justify-between items-center mb-6">
 
         <h1 className="text-3xl font-bold">
-          Maintenance Management
+          Vehicles Under Maintenance
         </h1>
 <button
   onClick={() =>
@@ -71,6 +71,14 @@ const [selectedMaintenance, setSelectedMaintenance] = useState(null);
 
               <th className="p-4 text-left">
                 Vehicle
+              </th>
+
+              <th className="p-4 text-left">
+                Type
+              </th>
+
+              <th className="p-4 text-left">
+                Make/Model
               </th>
 
               <th className="p-4 text-left">
@@ -108,6 +116,14 @@ const [selectedMaintenance, setSelectedMaintenance] = useState(null);
 
                 <td className="p-4">
                   {maintenance.vehicleRegistrationNumber}
+                </td>
+
+                <td className="p-4">
+                  {maintenance.vehicleType}
+                </td>
+
+                <td className="p-4">
+                  {maintenance.make}
                 </td>
 
                 <td className="p-4">
@@ -169,7 +185,7 @@ const [selectedMaintenance, setSelectedMaintenance] = useState(null);
     }
   `}
 >
-  Approve Completion
+  Approve & Complete
 </button>
                  )}
 
@@ -200,7 +216,10 @@ const [selectedMaintenance, setSelectedMaintenance] = useState(null);
       setShowCompleteModal(false)
     }
 
-    onSuccess={fetchMaintenance}
+    onSuccess={() => {
+      setMaintenances(prev => prev.filter(m => m.id !== selectedMaintenance.id));
+      alert("Maintenance successfully approved and completed!");
+    }}
 
   />
 

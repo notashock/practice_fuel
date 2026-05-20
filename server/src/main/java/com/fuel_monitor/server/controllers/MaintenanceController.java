@@ -123,6 +123,16 @@ public class MaintenanceController {
         return ResponseEntity.ok(MaintenanceScheduleResponse.fromEntity(saved));
     }
 
+    @GetMapping("/active")
+    @PreAuthorize("hasAnyRole('FLEET_MANAGER', 'ADMIN', 'MECHANIC')")
+    public ResponseEntity<List<MaintenanceScheduleResponse>> getActiveMaintenance() {
+        List<MaintenanceScheduleResponse> responses = scheduleRepository.findByStatusIn(
+                List.of(ScheduleStatus.PENDING, ScheduleStatus.OVERDUE)).stream()
+                .map(MaintenanceScheduleResponse::fromEntity)
+                .collect(Collectors.toList());
+        return ResponseEntity.ok(responses);
+    }
+
     @GetMapping("/overdue")
     @PreAuthorize("hasAnyRole('FLEET_MANAGER', 'ADMIN', 'MECHANIC')")
     public ResponseEntity<List<MaintenanceScheduleResponse>> getOverdueMaintenance() {

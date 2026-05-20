@@ -14,6 +14,8 @@ public class MaintenanceScheduleResponse {
     private Long id;
     private Long vehicleId;
     private String vehicleRegistrationNumber;
+    private String vehicleType;
+    private String make;
     private String scheduleType;
     private Double serviceIntervalKM;
     private Double lastServiceKM;
@@ -26,6 +28,8 @@ public class MaintenanceScheduleResponse {
                 .id(schedule.getId())
                 .vehicleId(schedule.getVehicle() != null ? schedule.getVehicle().getId() : null)
                 .vehicleRegistrationNumber(schedule.getVehicle() != null ? schedule.getVehicle().getRegistrationNumber() : null)
+                .vehicleType(schedule.getVehicle() != null && schedule.getVehicle().getVehicleType() != null ? schedule.getVehicle().getVehicleType().name() : null)
+                .make(schedule.getVehicle() != null && schedule.getVehicle().getMake() != null ? schedule.getVehicle().getMake().name() : null)
                 .scheduleType(schedule.getScheduleType() != null ? schedule.getScheduleType().name() : null)
                 .serviceIntervalKM(schedule.getServiceIntervalKM())
                 .lastServiceKM(schedule.getLastServiceKM())

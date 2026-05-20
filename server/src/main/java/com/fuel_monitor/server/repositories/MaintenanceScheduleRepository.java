@@ -11,5 +11,6 @@ import java.util.Optional;
 @Repository
 public interface MaintenanceScheduleRepository extends JpaRepository<MaintenanceSchedule, Long> {
     List<MaintenanceSchedule> findByStatus(ScheduleStatus status);
+    List<MaintenanceSchedule> findByStatusIn(List<ScheduleStatus> statuses);
     Optional<MaintenanceSchedule> findTopByVehicleIdOrderByNextServiceDueKMDesc(Long vehicleId);
 }
