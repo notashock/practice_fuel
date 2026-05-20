@@ -21,6 +21,7 @@ import AddVehicle from "./pages/fleet/AddVehicle";
 import VehicleDetails from "./pages/fleet/VehicleDetails";
 import Maintenance from "./pages/fleet/Maintenance";
 import ScheduleMaintenance from "./pages/fleet/ScheduleMaintenance";
+import Costs from "./pages/fleet/Costs";
 function App() {
 
   return (
@@ -100,6 +101,16 @@ function App() {
       allowedRoles={["FLEET_MANAGER"]}
     >
       <ScheduleMaintenance />
+    </ProtectedRoute>
+  }
+/>
+<Route
+  path="/fleet/costs"
+  element={
+    <ProtectedRoute
+      allowedRoles={["FLEET_MANAGER"]}
+    >
+      <Costs />
     </ProtectedRoute>
   }
 />
