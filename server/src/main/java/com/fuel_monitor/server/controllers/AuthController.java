@@ -6,6 +6,7 @@ import com.fuel_monitor.server.dtos.response.AuthResponse;
 import com.fuel_monitor.server.models.entities.User;
 import com.fuel_monitor.server.repositories.UserRepository;
 import com.fuel_monitor.server.security.JwtService;
+import io.swagger.v3.oas.annotations.security.SecurityRequirements;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -16,6 +17,7 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("/api/auth")
 @RequiredArgsConstructor
+@SecurityRequirements() // <-- THIS FIXES IT: Tells Swagger to remove the lock icon for this entire controller
 public class AuthController {
 
     private final UserRepository userRepository;
