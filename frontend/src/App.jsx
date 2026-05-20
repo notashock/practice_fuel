@@ -6,6 +6,10 @@ import Unauthorized from "./pages/Unauthorized";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 
 import DriverDashboard from "./pages/driver/DriverDashboard";
+import FuelLogs from "./pages/driver/FuelLogs";
+import AddFuelLog from "./pages/driver/AddFuelLog";
+import ReportIssue from "./pages/driver/ReportIssue";
+
 import MechanicDashboard from "./pages/mechanic/MechanicDashboard";
 
 import ProtectedRoute from "./routes/ProtectedRoute";
@@ -108,6 +112,36 @@ function App() {
             </ProtectedRoute>
           }
         />
+        <Route
+  path="/driver/fuel-logs"
+  element={
+    <ProtectedRoute
+      allowedRoles={["DRIVER"]}
+    >
+      <FuelLogs />
+    </ProtectedRoute>
+  }
+/>
+<Route
+  path="/driver/fuel-logs/add"
+  element={
+    <ProtectedRoute
+      allowedRoles={["DRIVER"]}
+    >
+      <AddFuelLog />
+    </ProtectedRoute>
+  }
+/>
+<Route
+  path="/driver/issues"
+  element={
+    <ProtectedRoute
+      allowedRoles={["DRIVER"]}
+    >
+      <ReportIssue />
+    </ProtectedRoute>
+  }
+/>
 
         {/* MECHANIC */}
 
