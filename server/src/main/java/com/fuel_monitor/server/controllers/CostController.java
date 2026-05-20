@@ -42,8 +42,12 @@ public class CostController {
             @RequestParam Long vehicleId,
             @RequestParam int year
     ) {
-        // Utilizing the aggregate query built in Phase 3
-        Double totalMaintenanceCost = costRepository.getTotalMaintenanceCostByVehicleAndYear(vehicleId, year);
+        // We explicitly pass the MAINTENANCE enum to the query now
+        Double totalMaintenanceCost = costRepository.getTotalCostByVehicleAndTypeAndYear(
+                vehicleId,
+                com.fuel_monitor.server.models.enums.CostType.MAINTENANCE,
+                year
+        );
 
         Map<String, Object> summary = new HashMap<>();
         summary.put("vehicleId", vehicleId);

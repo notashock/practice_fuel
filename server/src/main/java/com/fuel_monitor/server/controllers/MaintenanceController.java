@@ -2,14 +2,13 @@ package com.fuel_monitor.server.controllers;
 
 import com.fuel_monitor.server.dtos.request.MaintenanceRecordRequest;
 import com.fuel_monitor.server.exceptions.BusinessRuleException;
-import com.fuel_monitor.server.models.entities.MaintenanceRecord;
-import com.fuel_monitor.server.models.entities.MaintenanceSchedule;
-import com.fuel_monitor.server.models.entities.User;
-import com.fuel_monitor.server.models.entities.Vehicle;
+import com.fuel_monitor.server.models.entities.*;
+import com.fuel_monitor.server.models.enums.CostType;
 import com.fuel_monitor.server.models.enums.ScheduleStatus;
 import com.fuel_monitor.server.models.enums.VehicleStatus;
 import com.fuel_monitor.server.repositories.MaintenanceRecordRepository;
 import com.fuel_monitor.server.repositories.MaintenanceScheduleRepository;
+import com.fuel_monitor.server.repositories.VehicleCostRepository;
 import com.fuel_monitor.server.repositories.VehicleRepository;
 import com.fuel_monitor.server.services.MaintenanceService;
 import lombok.RequiredArgsConstructor;
@@ -27,6 +26,7 @@ public class MaintenanceController {
     private final MaintenanceScheduleRepository scheduleRepository;
     private final MaintenanceRecordRepository recordRepository;
     private final VehicleRepository vehicleRepository;
+    private final VehicleCostRepository costRepository;
     private final MaintenanceService maintenanceService;
 
     @PostMapping("/schedule")
@@ -46,7 +46,7 @@ public class MaintenanceController {
     @PostMapping("/records")
     public ResponseEntity<MaintenanceRecord> recordMaintenance(
             @RequestBody MaintenanceRecordRequest request,
-            @AuthenticationPrincipal User mechanic // Securely grabbed from JWT token
+            @AuthenticationPrincipal User mechanic
     ) {
         Vehicle vehicle = vehicleRepository.findById(request.getVehicleId())
                 .orElseThrow(() -> new BusinessRuleException("Vehicle not found"));
@@ -55,6 +55,7 @@ public class MaintenanceController {
             throw new BusinessRuleException("Maintenance cost must be >= 70");
         }
 
+        // 1. Save the actual maintenance record
         MaintenanceRecord record = MaintenanceRecord.builder()
                 .vehicle(vehicle)
                 .mechanic(mechanic)
@@ -64,7 +65,19 @@ public class MaintenanceController {
                 .remarks(request.getRemarks())
                 .build();
 
-        return ResponseEntity.ok(recordRepository.save(record));
+        MaintenanceRecord savedRecord = recordRepository.save(record);
+
+        // 2. AUTO-GENERATE the VehicleCost ledger entry
+        VehicleCost autoCost = VehicleCost.builder()
+                .vehicle(vehicle)
+                .costType(CostType.MAINTENANCE)
+                .amount(request.getCost())
+                .remarks("Auto-generated from Maintenance Record for: " + request.getServiceType().name())
+                .build();
+
+        costRepository.save(autoCost);
+
+        return ResponseEntity.ok(savedRecord);
     }
 
     @PutMapping("/schedule/{id}/complete")
