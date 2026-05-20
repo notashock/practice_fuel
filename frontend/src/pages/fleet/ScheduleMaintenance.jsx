@@ -1,21 +1,11 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
 
 import DashboardLayout from "../../layouts/DashboardLayout";
 import API from "../../api/axios";
 
 export default function ScheduleMaintenance() {
 
-  const navigate = useNavigate();
-
   const [vehicles, setVehicles] = useState([]);
-
-  const [formData, setFormData] = useState({
-    vehicleId: "",
-    scheduleType: "",
-    serviceIntervalKM: 5000,
-    lastServiceKM: "",
-  });
 
   const [loading, setLoading] = useState(false);
 
@@ -23,16 +13,24 @@ export default function ScheduleMaintenance() {
 
   const [success, setSuccess] = useState("");
 
+  const [selectedVehicle, setSelectedVehicle] =
+    useState("");
+
+  // Fetch Vehicles
+
   const fetchVehicles = async () => {
 
     try {
 
       const response = await API.get("/vehicles");
 
-      // only ACTIVE vehicles
-      const activeVehicles = response.data.filter(
-        (vehicle) => vehicle.status === "ACTIVE"
-      );
+      // Show only ACTIVE vehicles
+
+      const activeVehicles =
+        response.data.filter(
+          (vehicle) =>
+            vehicle.status === "ACTIVE"
+        );
 
       setVehicles(activeVehicles);
 
@@ -46,70 +44,46 @@ export default function ScheduleMaintenance() {
     fetchVehicles();
   }, []);
 
-  const handleChange = (e) => {
-
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value,
-    });
-  };
+  // Schedule Maintenance
 
   const handleSubmit = async (e) => {
 
     e.preventDefault();
 
     setError("");
+
     setSuccess("");
 
-    // validation
-    if (
-      Number(formData.serviceIntervalKM) < 1000
-    ) {
+    if (!selectedVehicle) {
 
-      setError(
-        "Service interval cannot be less than 1000 km"
-      );
+      setError("Please select a vehicle");
 
       return;
     }
-
-    const nextServiceDueKM =
-      Number(formData.lastServiceKM) +
-      Number(formData.serviceIntervalKM);
 
     try {
 
       setLoading(true);
 
       await API.post(
-        "/maintenance/schedule",
-        {
-          vehicleId: Number(formData.vehicleId),
 
-          scheduleType: formData.scheduleType,
-
-          serviceIntervalKM: Number(
-            formData.serviceIntervalKM
-          ),
-
-          lastServiceKM: Number(
-            formData.lastServiceKM
-          ),
-
-          nextServiceDueKM,
-        }
+        `/maintenance/schedule?vehicleId=${selectedVehicle}`
       );
 
       setSuccess(
         "Maintenance scheduled successfully"
       );
 
-      navigate("/fleet/maintenance");
+      setSelectedVehicle("");
+
+      fetchVehicles();
 
     } catch (err) {
 
       setError(
+
         err.response?.data?.message ||
+
         "Failed to schedule maintenance"
       );
 
@@ -123,47 +97,72 @@ export default function ScheduleMaintenance() {
 
     <DashboardLayout>
 
-      <div className="max-w-4xl mx-auto bg-white p-8 rounded-xl shadow-md">
+      <div className="max-w-3xl mx-auto bg-white rounded-xl shadow-md p-8">
 
-        <h1 className="text-3xl font-bold mb-6">
-          Schedule Maintenance
-        </h1>
+        {/* Header */}
+
+        <div className="mb-8">
+
+          <h1 className="text-3xl font-bold">
+            Schedule Maintenance
+          </h1>
+
+          <p className="text-gray-500 mt-1">
+            Assign vehicle for preventive maintenance
+          </p>
+
+        </div>
+
+        {/* Alerts */}
 
         {error && (
-          <p className="bg-red-100 text-red-600 p-3 rounded-lg mb-4">
+
+          <div className="bg-red-100 text-red-600 p-3 rounded-lg mb-5">
+
             {error}
-          </p>
+
+          </div>
+
         )}
 
         {success && (
-          <p className="bg-green-100 text-green-600 p-3 rounded-lg mb-4">
+
+          <div className="bg-green-100 text-green-600 p-3 rounded-lg mb-5">
+
             {success}
-          </p>
+
+          </div>
+
         )}
+
+        {/* Form */}
 
         <form
           onSubmit={handleSubmit}
-          className="grid grid-cols-1 md:grid-cols-2 gap-5"
+          className="space-y-6"
         >
 
-          {/* Vehicle */}
+          {/* Vehicle Selection */}
 
           <div>
 
             <label className="block mb-2 font-medium">
-              Vehicle
+              Select Vehicle
             </label>
 
             <select
-              name="vehicleId"
-              value={formData.vehicleId}
-              onChange={handleChange}
+              value={selectedVehicle}
+              onChange={(e) =>
+                setSelectedVehicle(
+                  e.target.value
+                )
+              }
               className="w-full border p-3 rounded-lg"
               required
             >
 
               <option value="">
-                Select Vehicle
+                Choose Vehicle
               </option>
 
               {vehicles.map((vehicle) => (
@@ -173,6 +172,8 @@ export default function ScheduleMaintenance() {
                   value={vehicle.id}
                 >
                   {vehicle.registrationNumber}
+                  {" - "}
+                  {vehicle.vehicleType}
                 </option>
 
               ))}
@@ -181,95 +182,48 @@ export default function ScheduleMaintenance() {
 
           </div>
 
-          {/* Schedule Type */}
+          {/* Info Box */}
 
-          <div>
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
 
-            <label className="block mb-2 font-medium">
-              Schedule Type
-            </label>
+            <h3 className="font-semibold text-blue-700 mb-2">
+              Maintenance Rules
+            </h3>
 
-            <select
-              name="scheduleType"
-              value={formData.scheduleType}
-              onChange={handleChange}
-              className="w-full border p-3 rounded-lg"
-              required
-            >
+            <ul className="text-sm text-gray-700 space-y-1">
 
-              <option value="">
-                Select Type
-              </option>
+              <li>
+                • Preventive maintenance interval:
+                5,000 km
+              </li>
 
-              <option value="PREVENTIVE">
-                PREVENTIVE
-              </option>
+              <li>
+                • Vehicle status changes to
+                UNDER_MAINTENANCE
+              </li>
 
-              <option value="BREAKDOWN">
-                BREAKDOWN
-              </option>
+              <li>
+                • Only ACTIVE vehicles can be
+                scheduled
+              </li>
 
-              <option value="INSPECTION">
-                INSPECTION
-              </option>
-
-            </select>
+            </ul>
 
           </div>
 
-          {/* Service Interval */}
+          {/* Submit Button */}
 
-          <div>
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-lg"
+          >
 
-            <label className="block mb-2 font-medium">
-              Service Interval KM
-            </label>
+            {loading
+              ? "Scheduling..."
+              : "Schedule Maintenance"}
 
-            <input
-              type="number"
-              name="serviceIntervalKM"
-              value={formData.serviceIntervalKM}
-              onChange={handleChange}
-              className="w-full border p-3 rounded-lg"
-              required
-            />
-
-          </div>
-
-          {/* Last Service */}
-
-          <div>
-
-            <label className="block mb-2 font-medium">
-              Last Service KM
-            </label>
-
-            <input
-              type="number"
-              name="lastServiceKM"
-              value={formData.lastServiceKM}
-              onChange={handleChange}
-              className="w-full border p-3 rounded-lg"
-              required
-            />
-
-          </div>
-
-          {/* Button */}
-
-          <div className="md:col-span-2">
-
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-lg"
-            >
-              {loading
-                ? "Scheduling..."
-                : "Schedule Maintenance"}
-            </button>
-
-          </div>
+          </button>
 
         </form>
 

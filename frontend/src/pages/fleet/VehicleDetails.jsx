@@ -1,7 +1,9 @@
 import { useEffect, useState } from "react";
+
 import { useParams } from "react-router-dom";
 
 import DashboardLayout from "../../layouts/DashboardLayout";
+
 import API from "../../api/axios";
 
 export default function VehicleDetails() {
@@ -10,15 +12,56 @@ export default function VehicleDetails() {
 
   const [vehicle, setVehicle] = useState(null);
 
-  const [loading, setLoading] = useState(true);
+  const [maintenanceRecords, setMaintenanceRecords] =
+    useState([]);
 
-  const fetchVehicle = async () => {
+  const [costSummary, setCostSummary] =
+    useState(null);
+
+  const [loading, setLoading] =
+    useState(true);
+
+  // Fetch Vehicle Details
+
+  const fetchVehicleDetails = async () => {
 
     try {
 
-      const response = await API.get(`/vehicles/${id}`);
+      const [
+        vehiclesResponse,
+        maintenanceResponse,
+        summaryResponse,
+      ] = await Promise.all([
 
-      setVehicle(response.data);
+        API.get("/vehicles"),
+
+        API.get(
+          `/maintenance/vehicle/${id}`
+        ),
+
+        API.get(
+
+          `/costs/summary?vehicleId=${id}&year=${new Date().getFullYear()}`
+        ),
+      ]);
+
+      // Find Selected Vehicle
+
+      const foundVehicle =
+        vehiclesResponse.data.find(
+          (vehicle) =>
+            vehicle.id === Number(id)
+        );
+
+      setVehicle(foundVehicle);
+
+      setMaintenanceRecords(
+        maintenanceResponse.data
+      );
+
+      setCostSummary(
+        summaryResponse.data
+      );
 
     } catch (error) {
 
@@ -31,13 +74,33 @@ export default function VehicleDetails() {
   };
 
   useEffect(() => {
-    fetchVehicle();
+    fetchVehicleDetails();
   }, [id]);
 
+  // Loading State
+
   if (loading) {
+
     return (
+
       <DashboardLayout>
+
         <p>Loading vehicle details...</p>
+
+      </DashboardLayout>
+    );
+  }
+
+  // Vehicle Not Found
+
+  if (!vehicle) {
+
+    return (
+
+      <DashboardLayout>
+
+        <p>Vehicle not found</p>
+
       </DashboardLayout>
     );
   }
@@ -46,30 +109,89 @@ export default function VehicleDetails() {
 
     <DashboardLayout>
 
-      <div className="bg-white rounded-xl shadow-md p-8">
+      {/* Header */}
 
-        <div className="flex justify-between items-center mb-8">
+      <div className="mb-8">
 
-          <div>
+        <h1 className="text-3xl font-bold">
+          Vehicle Details
+        </h1>
 
-            <h1 className="text-3xl font-bold">
-              {vehicle.registrationNumber}
-            </h1>
+        <p className="text-gray-500 mt-1">
+          {
+            vehicle.registrationNumber
+          }
+        </p>
 
-            <p className="text-gray-500 mt-1">
-              Vehicle Details
-            </p>
+      </div>
 
-          </div>
+      {/* Vehicle Overview */}
+
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+
+        {/* Vehicle Type */}
+
+        <div className="bg-white p-6 rounded-xl shadow-md">
+
+          <p className="text-gray-500">
+            Vehicle Type
+          </p>
+
+          <h2 className="text-2xl font-bold mt-2">
+            {vehicle.vehicleType}
+          </h2>
+
+        </div>
+
+        {/* Fuel Type */}
+
+        <div className="bg-white p-6 rounded-xl shadow-md">
+
+          <p className="text-gray-500">
+            Fuel Type
+          </p>
+
+          <h2 className="text-2xl font-bold mt-2">
+            {vehicle.fuelType}
+          </h2>
+
+        </div>
+
+        {/* Odometer */}
+
+        <div className="bg-white p-6 rounded-xl shadow-md">
+
+          <p className="text-gray-500">
+            Odometer Reading
+          </p>
+
+          <h2 className="text-2xl font-bold mt-2">
+            {vehicle.odometerReading} km
+          </h2>
+
+        </div>
+
+        {/* Status */}
+
+        <div className="bg-white p-6 rounded-xl shadow-md">
+
+          <p className="text-gray-500">
+            Vehicle Status
+          </p>
 
           <span
-            className={`px-4 py-2 rounded-full text-white font-medium
-              
+            className={`inline-block mt-3 px-4 py-2 rounded-full text-white text-sm
+
               ${
                 vehicle.status === "ACTIVE"
+
                   ? "bg-green-500"
-                  : vehicle.status === "UNDER_MAINTENANCE"
+
+                  : vehicle.status ===
+                    "UNDER_MAINTENANCE"
+
                   ? "bg-yellow-500"
+
                   : "bg-red-500"
               }
             `}
@@ -79,83 +201,140 @@ export default function VehicleDetails() {
 
         </div>
 
-        {/* Vehicle Info */}
+      </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      {/* Cost Summary */}
 
-          <div className="bg-gray-100 p-5 rounded-lg">
+      <div className="bg-white rounded-xl shadow-md p-6 mb-8">
 
-            <p className="text-gray-500 mb-1">
-              Vehicle Type
+        <h2 className="text-2xl font-bold mb-4">
+          Maintenance Cost Summary
+        </h2>
+
+        <div className="flex items-center justify-between">
+
+          <div>
+
+            <p className="text-gray-500">
+              Total Maintenance Cost
             </p>
 
-            <h3 className="text-xl font-semibold">
-              {vehicle.vehicleType}
-            </h3>
+            <h2 className="text-4xl font-bold text-blue-600 mt-2">
+
+              ₹ {
+                costSummary?.totalMaintenanceCost || 0
+              }
+
+            </h2>
 
           </div>
 
-          <div className="bg-gray-100 p-5 rounded-lg">
+          <div className="text-right">
 
-            <p className="text-gray-500 mb-1">
-              Make
+            <p className="text-gray-500">
+              Year
             </p>
 
-            <h3 className="text-xl font-semibold">
-              {vehicle.make}
-            </h3>
+            <h3 className="text-2xl font-semibold mt-2">
 
-          </div>
+              {costSummary?.year}
 
-          <div className="bg-gray-100 p-5 rounded-lg">
-
-            <p className="text-gray-500 mb-1">
-              Model
-            </p>
-
-            <h3 className="text-xl font-semibold">
-              {vehicle.model}
-            </h3>
-
-          </div>
-
-          <div className="bg-gray-100 p-5 rounded-lg">
-
-            <p className="text-gray-500 mb-1">
-              Fuel Type
-            </p>
-
-            <h3 className="text-xl font-semibold">
-              {vehicle.fuelType}
-            </h3>
-
-          </div>
-
-          <div className="bg-gray-100 p-5 rounded-lg">
-
-            <p className="text-gray-500 mb-1">
-              Odometer Reading
-            </p>
-
-            <h3 className="text-xl font-semibold">
-              {vehicle.odometerReading} km
-            </h3>
-
-          </div>
-
-          <div className="bg-gray-100 p-5 rounded-lg">
-
-            <p className="text-gray-500 mb-1">
-              Year Of Manufacture
-            </p>
-
-            <h3 className="text-xl font-semibold">
-              {vehicle.yearOfManufacture}
             </h3>
 
           </div>
 
         </div>
+
+      </div>
+
+      {/* Maintenance History */}
+
+      <div className="bg-white rounded-xl shadow-md overflow-x-auto">
+
+        <div className="p-6 border-b">
+
+          <h2 className="text-2xl font-bold">
+            Maintenance History
+          </h2>
+
+        </div>
+
+        <table className="w-full">
+
+          <thead className="bg-gray-100">
+
+            <tr>
+
+              <th className="p-4 text-left">
+                Service Type
+              </th>
+
+              <th className="p-4 text-left">
+                Cost
+              </th>
+
+              <th className="p-4 text-left">
+                Parts Replaced
+              </th>
+
+              <th className="p-4 text-left">
+                Remarks
+              </th>
+
+            </tr>
+
+          </thead>
+
+          <tbody>
+
+            {maintenanceRecords.map((record) => (
+
+              <tr
+                key={record.id}
+                className="border-b hover:bg-gray-50"
+              >
+
+                <td className="p-4">
+                  {record.serviceType}
+                </td>
+
+                <td className="p-4">
+                  ₹ {record.cost}
+                </td>
+
+                <td className="p-4">
+                  {
+                    record.partsReplaced ||
+                    "-"
+                  }
+                </td>
+
+                <td className="p-4">
+                  {record.remarks || "-"}
+                </td>
+
+              </tr>
+
+            ))}
+
+            {maintenanceRecords.length === 0 && (
+
+              <tr>
+
+                <td
+                  colSpan="4"
+                  className="text-center p-6 text-gray-500"
+                >
+                  No maintenance records found
+                </td>
+
+              </tr>
+
+            )}
+
+          </tbody>
+
+        </table>
 
       </div>
 

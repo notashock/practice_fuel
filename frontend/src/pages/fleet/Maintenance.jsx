@@ -2,17 +2,26 @@ import { useEffect, useState } from "react";
 
 import DashboardLayout from "../../layouts/DashboardLayout";
 import API from "../../api/axios";
+
 import { useNavigate } from "react-router-dom";
+
 import CompleteMaintenanceModal from "../../components/CompleteMaintenanceModal";
+
 export default function Maintenance() {
 
   const [maintenances, setMaintenances] = useState([]);
 
   const [loading, setLoading] = useState(true);
-  const [showCompleteModal, setShowCompleteModal] = useState(false);
 
-const [selectedMaintenance, setSelectedMaintenance] = useState(null);
- const navigate = useNavigate();
+  const [showCompleteModal, setShowCompleteModal] =
+    useState(false);
+
+  const [selectedMaintenance, setSelectedMaintenance] =
+    useState(null);
+
+  const navigate = useNavigate();
+
+  // Fetch Overdue Maintenance
 
   const fetchMaintenance = async () => {
 
@@ -42,21 +51,36 @@ const [selectedMaintenance, setSelectedMaintenance] = useState(null);
 
     <DashboardLayout>
 
+      {/* Header */}
+
       <div className="flex justify-between items-center mb-6">
 
-        <h1 className="text-3xl font-bold">
-          Maintenance Management
-        </h1>
-<button
-  onClick={() =>
-    navigate("/fleet/maintenance/schedule")
-  }
-  className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2 rounded-lg"
->
-  Schedule Maintenance
-</button>
+        <div>
+
+          <h1 className="text-3xl font-bold">
+            Overdue Maintenance
+          </h1>
+
+          <p className="text-gray-500 mt-1">
+            Manage overdue maintenance schedules
+          </p>
+
+        </div>
+
+        <button
+          onClick={() =>
+            navigate(
+              "/fleet/maintenance/schedule"
+            )
+          }
+          className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2 rounded-lg"
+        >
+          Schedule Maintenance
+        </button>
 
       </div>
+
+      {/* Table */}
 
       <div className="bg-white rounded-xl shadow-md overflow-x-auto">
 
@@ -103,24 +127,36 @@ const [selectedMaintenance, setSelectedMaintenance] = useState(null);
                 className="border-b hover:bg-gray-50"
               >
 
+                {/* Vehicle */}
+
                 <td className="p-4">
+
                   {
                     maintenance.vehicle
                       ?.registrationNumber
                   }
+
                 </td>
+
+                {/* Schedule Type */}
 
                 <td className="p-4">
                   {maintenance.scheduleType}
                 </td>
 
+                {/* Last Service */}
+
                 <td className="p-4">
                   {maintenance.lastServiceKM} km
                 </td>
 
+                {/* Next Due */}
+
                 <td className="p-4">
                   {maintenance.nextServiceDueKM} km
                 </td>
+
+                {/* Status */}
 
                 <td className="p-4">
 
@@ -128,48 +164,70 @@ const [selectedMaintenance, setSelectedMaintenance] = useState(null);
                     className={`px-3 py-1 rounded-full text-white text-sm
 
                       ${
-                        maintenance.status === "COMPLETED"
+                        maintenance.status ===
+                        "COMPLETED"
+
                           ? "bg-green-500"
 
-                          : maintenance.status === "OVERDUE"
+                          : maintenance.status ===
+                            "OVERDUE"
+
                           ? "bg-red-500"
 
-                          : maintenance.status === "IN_PROGRESS"
+                          : maintenance.status ===
+                            "IN_PROGRESS"
+
                           ? "bg-yellow-500"
 
                           : "bg-blue-500"
                       }
                     `}
                   >
+
                     {maintenance.status}
+
                   </span>
 
                 </td>
 
-                <td className="p-4 flex gap-2">
+                {/* Actions */}
 
-                 <button
+                <td className="p-4">
 
-  onClick={() => {
-    setSelectedMaintenance(maintenance);
-    setShowCompleteModal(true);
-  }}
+                  <button
 
-  disabled={
-    maintenance.status === "COMPLETED"
-  }
+                    onClick={() => {
 
-  className={`px-3 py-1 rounded-lg text-white
+                      setSelectedMaintenance(
+                        maintenance
+                      );
 
-    ${
-      maintenance.status === "COMPLETED"
-        ? "bg-gray-400 cursor-not-allowed"
-        : "bg-green-500 hover:bg-green-600"
-    }
-  `}
->
-  Complete
-</button>
+                      setShowCompleteModal(
+                        true
+                      );
+                    }}
+
+                    disabled={
+                      maintenance.status ===
+                      "COMPLETED"
+                    }
+
+                    className={`px-4 py-2 rounded-lg text-white
+
+                      ${
+                        maintenance.status ===
+                        "COMPLETED"
+
+                          ? "bg-gray-400 cursor-not-allowed"
+
+                          : "bg-green-500 hover:bg-green-600"
+                      }
+                    `}
+                  >
+
+                    Complete
+
+                  </button>
 
                 </td>
 
@@ -177,32 +235,63 @@ const [selectedMaintenance, setSelectedMaintenance] = useState(null);
 
             ))}
 
+            {/* Empty State */}
+
+            {!loading &&
+              maintenances.length === 0 && (
+
+              <tr>
+
+                <td
+                  colSpan="6"
+                  className="text-center p-6 text-gray-500"
+                >
+                  No overdue maintenance found
+                </td>
+
+              </tr>
+
+            )}
+
           </tbody>
 
         </table>
 
+        {/* Loading */}
+
         {loading && (
+
           <p className="p-5 text-center">
             Loading maintenance records...
           </p>
+
         )}
 
       </div>
-      {showCompleteModal && selectedMaintenance && (
 
-  <CompleteMaintenanceModal
+      {/* Complete Modal */}
 
-    maintenance={selectedMaintenance}
+      {showCompleteModal &&
+        selectedMaintenance && (
 
-    onClose={() =>
-      setShowCompleteModal(false)
-    }
+        <CompleteMaintenanceModal
 
-    onSuccess={fetchMaintenance}
+          maintenance={selectedMaintenance}
 
-  />
+          onClose={() =>
+            setShowCompleteModal(false)
+          }
 
-)}
+          onSuccess={() => {
+
+            fetchMaintenance();
+
+            setShowCompleteModal(false);
+          }}
+
+        />
+
+      )}
 
     </DashboardLayout>
   );
