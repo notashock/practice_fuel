@@ -1,6 +1,7 @@
 package com.fuel_monitor.server.controllers;
 
 import com.fuel_monitor.server.dtos.request.FuelLogRequest;
+import com.fuel_monitor.server.dtos.response.FuelLogResponse;
 import com.fuel_monitor.server.models.entities.FuelLog;
 import com.fuel_monitor.server.models.entities.User;
 import com.fuel_monitor.server.models.entities.VehicleCost;
@@ -10,10 +11,12 @@ import com.fuel_monitor.server.repositories.VehicleCostRepository;
 import com.fuel_monitor.server.services.FuelService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/fuel-logs")
@@ -22,12 +25,13 @@ public class FuelController {
 
     private final FuelService fuelService;
     private final FuelLogRepository fuelLogRepository;
-    private final VehicleCostRepository costRepository; // Injected for auto-cost generation
+    private final VehicleCostRepository costRepository;
 
     @PostMapping("/vehicle/{vehicleId}")
-    public ResponseEntity<FuelLog> logFuel(
+    @PreAuthorize("hasRole('DRIVER')")
+    public ResponseEntity<FuelLogResponse> logFuel(
             @PathVariable Long vehicleId,
-            @AuthenticationPrincipal User driver, // Automatically pulls the logged-in driver context via JWT
+            @AuthenticationPrincipal User driver,
             @RequestBody FuelLogRequest request
     ) {
         FuelLog fuelLog = FuelLog.builder()
@@ -43,7 +47,7 @@ public class FuelController {
 
         // 2. AUTO-GENERATE the VehicleCost ledger entry so it appears in Admin financial reports
         VehicleCost autoCost = VehicleCost.builder()
-                .vehicle(savedLog.getVehicle()) // We use the vehicle entity attached to the saved log
+                .vehicle(savedLog.getVehicle())
                 .costType(CostType.FUEL)
                 .amount(request.getFuelCost())
                 .remarks("Auto-generated from Fuel Log by Driver ID: " + driver.getId())
@@ -51,13 +55,15 @@ public class FuelController {
 
         costRepository.save(autoCost);
 
-        return ResponseEntity.ok(savedLog);
+        return ResponseEntity.ok(FuelLogResponse.fromEntity(savedLog));
     }
 
-    // THE MISSING GET ENDPOINT
     @GetMapping("/vehicle/{vehicleId}")
-    public ResponseEntity<List<FuelLog>> getFuelLogsByVehicle(@PathVariable Long vehicleId) {
-        // Utilizes the custom finder method we created in Phase 3 to return newest logs first
-        return ResponseEntity.ok(fuelLogRepository.findByVehicleIdOrderByRefillDateDesc(vehicleId));
+    @PreAuthorize("hasAnyRole('FLEET_MANAGER', 'ADMIN', 'DRIVER')")
+    public ResponseEntity<List<FuelLogResponse>> getFuelLogsByVehicle(@PathVariable Long vehicleId) {
+        List<FuelLogResponse> responses = fuelLogRepository.findByVehicleIdOrderByRefillDateDesc(vehicleId).stream()
+                .map(FuelLogResponse::fromEntity)
+                .collect(Collectors.toList());
+        return ResponseEntity.ok(responses);
     }
 }

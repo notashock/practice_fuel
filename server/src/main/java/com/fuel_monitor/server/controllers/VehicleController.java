@@ -1,15 +1,19 @@
 package com.fuel_monitor.server.controllers;
 
 import com.fuel_monitor.server.dtos.request.VehicleRequest;
+import com.fuel_monitor.server.dtos.response.VehicleResponse;
 import com.fuel_monitor.server.exceptions.BusinessRuleException;
 import com.fuel_monitor.server.models.entities.Vehicle;
 import com.fuel_monitor.server.models.enums.VehicleStatus;
 import com.fuel_monitor.server.repositories.VehicleRepository;
+import com.fuel_monitor.server.services.MaintenanceService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/vehicles")
@@ -17,12 +21,18 @@ import java.util.List;
 public class VehicleController {
 
     private final VehicleRepository vehicleRepository;
+    private final MaintenanceService maintenanceService;
 
     @PostMapping
-    public ResponseEntity<Vehicle> registerVehicle(@RequestBody VehicleRequest request) {
+    @PreAuthorize("hasRole('FLEET_MANAGER')")
+    public ResponseEntity<VehicleResponse> registerVehicle(@RequestBody VehicleRequest request) {
         // Simple regex matching registration rule: XX00XX0000
-        if (!request.getRegistrationNumber().matches("^[A-Z]{2}[0-9]{2}[A-Z]{2}[0-9]{4}$")) {
+        if (request.getRegistrationNumber() == null || !request.getRegistrationNumber().matches("^[A-Z]{2}[0-9]{2}[A-Z]{2}[0-9]{4}$")) {
             throw new BusinessRuleException("Registration number format must be XX00XX0000 (e.g., KA01AB1234)");
+        }
+
+        if (request.getTotalValue() == null || request.getTotalValue() <= 0) {
+            throw new BusinessRuleException("Vehicle total value must be valid and positive");
         }
 
         Vehicle vehicle = Vehicle.builder()
@@ -33,36 +43,50 @@ public class VehicleController {
                 .yearOfManufacture(request.getYearOfManufacture())
                 .fuelType(request.getFuelType())
                 .odometerReading(request.getOdometerReading())
+                .totalValue(request.getTotalValue())
                 .status(VehicleStatus.ACTIVE)
                 .build();
 
-        return ResponseEntity.ok(vehicleRepository.save(vehicle));
+        Vehicle saved = vehicleRepository.save(vehicle);
+        return ResponseEntity.ok(VehicleResponse.fromEntity(saved));
     }
 
     @GetMapping
-    public ResponseEntity<List<Vehicle>> getAllVehicles() {
-        return ResponseEntity.ok(vehicleRepository.findAll());
+    @PreAuthorize("hasAnyRole('FLEET_MANAGER', 'ADMIN', 'MECHANIC', 'DRIVER')")
+    public ResponseEntity<List<VehicleResponse>> getAllVehicles() {
+        List<VehicleResponse> responses = vehicleRepository.findAll().stream()
+                .map(VehicleResponse::fromEntity)
+                .collect(Collectors.toList());
+        return ResponseEntity.ok(responses);
     }
 
     @PutMapping("/{id}/odometer")
-    public ResponseEntity<Vehicle> updateOdometer(@PathVariable Long id, @RequestParam Double reading) {
+    @PreAuthorize("hasRole('FLEET_MANAGER')")
+    public ResponseEntity<VehicleResponse> updateOdometer(@PathVariable Long id, @RequestParam Double reading) {
         Vehicle vehicle = vehicleRepository.findById(id)
                 .orElseThrow(() -> new BusinessRuleException("Vehicle not found"));
 
-        if (reading < vehicle.getOdometerReading()) {
-            throw new BusinessRuleException("Odometer reading must be greater than or equal to the previous reading");
+        if (reading == null || reading <= vehicle.getOdometerReading()) {
+            throw new BusinessRuleException("Odometer reading must be strictly increasing");
         }
 
         vehicle.setOdometerReading(reading);
-        return ResponseEntity.ok(vehicleRepository.save(vehicle));
+        Vehicle saved = vehicleRepository.save(vehicle);
+
+        // Trigger active maintenance overdue check
+        maintenanceService.evaluateMaintenanceStatus(id);
+
+        return ResponseEntity.ok(VehicleResponse.fromEntity(saved));
     }
 
     @PutMapping("/{id}/retire")
-    public ResponseEntity<Vehicle> retireVehicle(@PathVariable Long id) {
+    @PreAuthorize("hasRole('FLEET_MANAGER')")
+    public ResponseEntity<VehicleResponse> retireVehicle(@PathVariable Long id) {
         Vehicle vehicle = vehicleRepository.findById(id)
                 .orElseThrow(() -> new BusinessRuleException("Vehicle not found"));
 
         vehicle.setStatus(VehicleStatus.RETIRED);
-        return ResponseEntity.ok(vehicleRepository.save(vehicle));
+        Vehicle saved = vehicleRepository.save(vehicle);
+        return ResponseEntity.ok(VehicleResponse.fromEntity(saved));
     }
 }

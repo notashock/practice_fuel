@@ -24,6 +24,7 @@ public class FuelService {
     private final FuelLogRepository fuelLogRepository;
     private final VehicleRepository vehicleRepository;
     private final UserRepository userRepository;
+    private final MaintenanceService maintenanceService;
 
     @Transactional
     public FuelLog logFuel(Long vehicleId, Long driverId, FuelLog logDetails) {
@@ -32,22 +33,42 @@ public class FuelService {
         User driver = userRepository.findById(driverId)
                 .orElseThrow(() -> new BusinessRuleException("Driver not found"));
 
-        if (logDetails.getFuelAmountLiters() < 1) {
-            throw new BusinessRuleException("Fuel amount must be at least 1 liter"); // [cite: 229]
+        // Validate vehicle is ACTIVE
+        if (vehicle.getStatus() != com.fuel_monitor.server.models.enums.VehicleStatus.ACTIVE) {
+            throw new BusinessRuleException("Fuel can only be logged for ACTIVE vehicles. Current status: " + vehicle.getStatus());
+        }
+
+        if (logDetails.getFuelAmountLiters() == null || logDetails.getFuelAmountLiters() < 1) {
+            throw new BusinessRuleException("Fuel amount must be at least 1 liter");
+        }
+
+        if (logDetails.getFuelCost() == null || logDetails.getFuelCost() < 0) {
+            throw new BusinessRuleException("Fuel cost must be valid and non-negative");
+        }
+
+        // Enforce monthly fuel budget limit (₹50,000)
+        LocalDateTime startOfMonth = LocalDateTime.now().withDayOfMonth(1).withHour(0).withMinute(0).withSecond(0).withNano(0);
+        Double currentMonthCost = fuelLogRepository.sumFuelCostByVehicleAndDateRange(vehicleId, startOfMonth);
+        if (currentMonthCost == null) {
+            currentMonthCost = 0.0;
+        }
+        double monthlyBudgetLimit = 50000.0;
+        if (currentMonthCost + logDetails.getFuelCost() > monthlyBudgetLimit) {
+            throw new BusinessRuleException("Logging this fuel log of ₹" + logDetails.getFuelCost() + " exceeds the monthly fuel budget limit of ₹" + monthlyBudgetLimit + " for this vehicle. Current month spending: ₹" + currentMonthCost);
         }
 
         // Validate strictly increasing odometer
         FuelLog lastLog = fuelLogRepository.findFirstByVehicleIdOrderByOdometerAtRefillDesc(vehicleId).orElse(null);
         if (lastLog != null && logDetails.getOdometerAtRefill() <= lastLog.getOdometerAtRefill()) {
-            throw new BusinessRuleException("Odometer reading must be strictly increasing"); // [cite: 210, 228]
+            throw new BusinessRuleException("Odometer reading must be strictly increasing");
         }
 
         // Calculate current efficiency
         if (lastLog != null) {
             double distanceCovered = logDetails.getOdometerAtRefill() - lastLog.getOdometerAtRefill();
-            double currentEfficiency = distanceCovered / logDetails.getFuelAmountLiters(); // [cite: 216]
+            double currentEfficiency = distanceCovered / logDetails.getFuelAmountLiters();
 
-            validateEfficiencyBounds(vehicle.getVehicleType(), currentEfficiency); // [cite: 209]
+            validateEfficiencyBounds(vehicle.getVehicleType(), currentEfficiency);
             checkEfficiencyDrop(vehicleId, currentEfficiency);
         }
 
@@ -58,21 +79,24 @@ public class FuelService {
         vehicle.setOdometerReading(logDetails.getOdometerAtRefill());
         vehicleRepository.save(vehicle);
 
+        // Trigger active maintenance status evaluation in real-time
+        maintenanceService.evaluateMaintenanceStatus(vehicleId);
+
         return fuelLogRepository.save(logDetails);
     }
 
     private void validateEfficiencyBounds(VehicleType type, double efficiency) {
-        if (type == VehicleType.TRUCK && (efficiency < 2 || efficiency > 10)) {
-            throw new BusinessRuleException("Truck fuel efficiency must be between 2-10 km/l"); // [cite: 209]
+        if (type == VehicleType.TRUCK && (efficiency <= 2.0 || efficiency >= 10.0)) {
+            throw new BusinessRuleException("Truck fuel efficiency must strictly be between 2-10 km/l");
         }
-        if (type == VehicleType.CAR && (efficiency < 10 || efficiency > 20)) {
-            throw new BusinessRuleException("Car fuel efficiency must be between 10-20 km/l"); // [cite: 209]
+        if (type == VehicleType.CAR && (efficiency <= 10.0 || efficiency >= 20.0)) {
+            throw new BusinessRuleException("Car fuel efficiency must strictly be between 10-20 km/l");
         }
     }
 
     private void checkEfficiencyDrop(Long vehicleId, double currentEfficiency) {
         LocalDateTime thirtyDaysAgo = LocalDateTime.now().minusDays(30);
-        List<FuelLog> recentLogs = fuelLogRepository.findRecentLogsByVehicle(vehicleId, thirtyDaysAgo); // [cite: 221]
+        List<FuelLog> recentLogs = fuelLogRepository.findRecentLogsByVehicle(vehicleId, thirtyDaysAgo);
 
         if (recentLogs.size() > 1) {
             double totalDistance = 0;
@@ -83,10 +107,9 @@ public class FuelService {
                 totalFuel += recentLogs.get(i).getFuelAmountLiters();
             }
 
-            double averageEfficiency = totalDistance / totalFuel; // [cite: 221]
+            double averageEfficiency = totalDistance / totalFuel;
             if (currentEfficiency < (averageEfficiency * 0.8)) { // Drops by > 20%
-                log.warn("ALERT: Fuel efficiency dropped by > 20% for vehicle ID: " + vehicleId); // [cite: 222]
-                // Good to have: In a real system, trigger an email or notification here [cite: 335]
+                log.warn("ALERT: Fuel efficiency dropped by > 20% for vehicle ID: " + vehicleId);
             }
         }
     }

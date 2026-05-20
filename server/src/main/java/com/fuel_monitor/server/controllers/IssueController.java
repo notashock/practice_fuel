@@ -1,19 +1,23 @@
 package com.fuel_monitor.server.controllers;
 
 import com.fuel_monitor.server.dtos.request.IssueReportRequest;
+import com.fuel_monitor.server.dtos.response.IssueReportResponse;
 import com.fuel_monitor.server.exceptions.BusinessRuleException;
 import com.fuel_monitor.server.models.entities.IssueReport;
 import com.fuel_monitor.server.models.entities.User;
 import com.fuel_monitor.server.models.entities.Vehicle;
+import com.fuel_monitor.server.models.enums.VehicleStatus;
 import com.fuel_monitor.server.repositories.IssueReportRepository;
 import com.fuel_monitor.server.repositories.VehicleRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/issues")
@@ -24,7 +28,8 @@ public class IssueController {
     private final VehicleRepository vehicleRepository;
 
     @PostMapping
-    public ResponseEntity<IssueReport> reportIssue(
+    @PreAuthorize("hasRole('DRIVER')")
+    public ResponseEntity<IssueReportResponse> reportIssue(
             @RequestBody IssueReportRequest request,
             @AuthenticationPrincipal User driver
     ) {
@@ -35,6 +40,10 @@ public class IssueController {
         Vehicle vehicle = vehicleRepository.findById(request.getVehicleId())
                 .orElseThrow(() -> new BusinessRuleException("Vehicle not found"));
 
+        if (vehicle.getStatus() == VehicleStatus.RETIRED) {
+            throw new BusinessRuleException("Mechanical issues cannot be reported for RETIRED vehicles.");
+        }
+
         IssueReport issue = IssueReport.builder()
                 .vehicle(vehicle)
                 .reportedBy(driver)
@@ -43,25 +52,31 @@ public class IssueController {
                 .description(request.getDescription())
                 .build();
 
-        return ResponseEntity.ok(issueRepository.save(issue));
+        IssueReport saved = issueRepository.save(issue);
+        return ResponseEntity.ok(IssueReportResponse.fromEntity(saved));
     }
 
     @GetMapping("/open")
-    public ResponseEntity<List<IssueReport>> getOpenIssues() {
-        // Utilizing the custom JOIN query from Phase 3!
-        return ResponseEntity.ok(issueRepository.findAllOpenIssuesWithDetails());
+    @PreAuthorize("hasAnyRole('FLEET_MANAGER', 'ADMIN', 'MECHANIC', 'DRIVER')")
+    public ResponseEntity<List<IssueReportResponse>> getOpenIssues() {
+        List<IssueReportResponse> responses = issueRepository.findAllOpenIssuesWithDetails().stream()
+                .map(IssueReportResponse::fromEntity)
+                .collect(Collectors.toList());
+        return ResponseEntity.ok(responses);
     }
 
     @PutMapping("/{id}/acknowledge")
-    public ResponseEntity<IssueReport> acknowledgeIssue(@PathVariable Long id) {
+    @PreAuthorize("hasRole('MECHANIC')")
+    public ResponseEntity<IssueReportResponse> acknowledgeIssue(@PathVariable Long id) {
         IssueReport issue = issueRepository.findById(id)
                 .orElseThrow(() -> new BusinessRuleException("Issue not found"));
         // Additional logic for acknowledgement can go here
-        return ResponseEntity.ok(issue);
+        return ResponseEntity.ok(IssueReportResponse.fromEntity(issue));
     }
 
     @PutMapping("/{id}/resolve")
-    public ResponseEntity<IssueReport> resolveIssue(
+    @PreAuthorize("hasRole('MECHANIC')")
+    public ResponseEntity<IssueReportResponse> resolveIssue(
             @PathVariable Long id,
             @AuthenticationPrincipal User mechanic
     ) {
@@ -71,6 +86,7 @@ public class IssueController {
         issue.setResolvedAt(LocalDateTime.now());
         issue.setResolvedBy(mechanic);
 
-        return ResponseEntity.ok(issueRepository.save(issue));
+        IssueReport saved = issueRepository.save(issue);
+        return ResponseEntity.ok(IssueReportResponse.fromEntity(saved));
     }
 }

@@ -1,6 +1,7 @@
 package com.fuel_monitor.server.controllers;
 
 import com.fuel_monitor.server.dtos.request.VehicleCostRequest;
+import com.fuel_monitor.server.dtos.response.VehicleCostResponse;
 import com.fuel_monitor.server.exceptions.BusinessRuleException;
 import com.fuel_monitor.server.models.entities.Vehicle;
 import com.fuel_monitor.server.models.entities.VehicleCost;
@@ -8,9 +9,9 @@ import com.fuel_monitor.server.repositories.VehicleCostRepository;
 import com.fuel_monitor.server.repositories.VehicleRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
-import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -23,7 +24,8 @@ public class CostController {
     private final VehicleRepository vehicleRepository;
 
     @PostMapping("/record")
-    public ResponseEntity<VehicleCost> recordCost(@RequestBody VehicleCostRequest request) {
+    @PreAuthorize("hasAnyRole('FLEET_MANAGER', 'ADMIN')")
+    public ResponseEntity<VehicleCostResponse> recordCost(@RequestBody VehicleCostRequest request) {
         Vehicle vehicle = vehicleRepository.findById(request.getVehicleId())
                 .orElseThrow(() -> new BusinessRuleException("Vehicle not found"));
 
@@ -34,10 +36,12 @@ public class CostController {
                 .remarks(request.getRemarks())
                 .build();
 
-        return ResponseEntity.ok(costRepository.save(cost));
+        VehicleCost saved = costRepository.save(cost);
+        return ResponseEntity.ok(VehicleCostResponse.fromEntity(saved));
     }
 
     @GetMapping("/summary")
+    @PreAuthorize("hasAnyRole('FLEET_MANAGER', 'ADMIN')")
     public ResponseEntity<Map<String, Object>> getCostSummary(
             @RequestParam Long vehicleId,
             @RequestParam int year
@@ -47,7 +51,7 @@ public class CostController {
                 vehicleId,
                 com.fuel_monitor.server.models.enums.CostType.MAINTENANCE,
                 year
-        );
+            );
 
         Map<String, Object> summary = new HashMap<>();
         summary.put("vehicleId", vehicleId);

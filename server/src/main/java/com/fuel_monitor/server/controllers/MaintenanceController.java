@@ -1,6 +1,8 @@
 package com.fuel_monitor.server.controllers;
 
 import com.fuel_monitor.server.dtos.request.MaintenanceRecordRequest;
+import com.fuel_monitor.server.dtos.response.MaintenanceRecordResponse;
+import com.fuel_monitor.server.dtos.response.MaintenanceScheduleResponse;
 import com.fuel_monitor.server.exceptions.BusinessRuleException;
 import com.fuel_monitor.server.models.entities.*;
 import com.fuel_monitor.server.models.enums.CostType;
@@ -13,10 +15,12 @@ import com.fuel_monitor.server.repositories.VehicleRepository;
 import com.fuel_monitor.server.services.MaintenanceService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/maintenance")
@@ -30,9 +34,14 @@ public class MaintenanceController {
     private final MaintenanceService maintenanceService;
 
     @PostMapping("/schedule")
-    public ResponseEntity<MaintenanceSchedule> scheduleMaintenance(@RequestParam Long vehicleId) {
+    @PreAuthorize("hasRole('FLEET_MANAGER')")
+    public ResponseEntity<MaintenanceScheduleResponse> scheduleMaintenance(@RequestParam Long vehicleId) {
         Vehicle vehicle = vehicleRepository.findById(vehicleId)
                 .orElseThrow(() -> new BusinessRuleException("Vehicle not found"));
+
+        if (vehicle.getStatus() == VehicleStatus.RETIRED) {
+            throw new BusinessRuleException("RETIRED vehicles cannot be scheduled for maintenance.");
+        }
 
         // Triggers the logic built in Phase 4
         MaintenanceSchedule schedule = maintenanceService.createPreventiveSchedule(vehicleId, vehicle.getOdometerReading());
@@ -40,21 +49,33 @@ public class MaintenanceController {
         vehicle.setStatus(VehicleStatus.UNDER_MAINTENANCE); // Vehicle cannot be ACTIVE if UNDER_MAINTENANCE
         vehicleRepository.save(vehicle);
 
-        return ResponseEntity.ok(schedule);
+        return ResponseEntity.ok(MaintenanceScheduleResponse.fromEntity(schedule));
     }
 
     @PostMapping("/records")
-    public ResponseEntity<MaintenanceRecord> recordMaintenance(
-            @RequestParam Long vehicleId, // <-- Extracted from the query string
+    @PreAuthorize("hasRole('MECHANIC')")
+    public ResponseEntity<MaintenanceRecordResponse> recordMaintenance(
+            @RequestParam Long vehicleId,
             @RequestBody MaintenanceRecordRequest request,
             @AuthenticationPrincipal User mechanic
     ) {
-        // Uses the URL parameter instead of the request body
         Vehicle vehicle = vehicleRepository.findById(vehicleId)
                 .orElseThrow(() -> new BusinessRuleException("Vehicle not found"));
 
+        if (vehicle.getStatus() == VehicleStatus.RETIRED) {
+            throw new BusinessRuleException("Maintenance records cannot be logged for RETIRED vehicles.");
+        }
+
+        if (request.getCost() == null) {
+            throw new BusinessRuleException("Maintenance cost is required.");
+        }
+
         if (request.getCost() < 70) {
             throw new BusinessRuleException("Maintenance cost must be >= 70");
+        }
+
+        if (request.getCost() > vehicle.getTotalValue()) {
+            throw new BusinessRuleException("Maintenance cost (₹" + request.getCost() + ") cannot exceed the vehicle's total value (₹" + vehicle.getTotalValue() + ")");
         }
 
         // 1. Save the actual maintenance record
@@ -79,30 +100,44 @@ public class MaintenanceController {
 
         costRepository.save(autoCost);
 
-        return ResponseEntity.ok(savedRecord);
+        return ResponseEntity.ok(MaintenanceRecordResponse.fromEntity(savedRecord));
     }
 
     @PutMapping("/schedule/{id}/complete")
-    public ResponseEntity<MaintenanceSchedule> completeMaintenance(@PathVariable Long id) {
+    @PreAuthorize("hasRole('FLEET_MANAGER')")
+    public ResponseEntity<MaintenanceScheduleResponse> completeMaintenance(@PathVariable Long id) {
         MaintenanceSchedule schedule = scheduleRepository.findById(id)
                 .orElseThrow(() -> new BusinessRuleException("Schedule not found"));
 
         schedule.setStatus(ScheduleStatus.COMPLETED);
 
         Vehicle vehicle = schedule.getVehicle();
-        vehicle.setStatus(VehicleStatus.ACTIVE);
+        
+        // Prevent reactivating retired vehicles
+        if (vehicle.getStatus() != VehicleStatus.RETIRED) {
+            vehicle.setStatus(VehicleStatus.ACTIVE);
+        }
         vehicleRepository.save(vehicle);
 
-        return ResponseEntity.ok(scheduleRepository.save(schedule));
+        MaintenanceSchedule saved = scheduleRepository.save(schedule);
+        return ResponseEntity.ok(MaintenanceScheduleResponse.fromEntity(saved));
     }
 
     @GetMapping("/overdue")
-    public ResponseEntity<List<MaintenanceSchedule>> getOverdueMaintenance() {
-        return ResponseEntity.ok(scheduleRepository.findByStatus(ScheduleStatus.OVERDUE));
+    @PreAuthorize("hasAnyRole('FLEET_MANAGER', 'ADMIN', 'MECHANIC')")
+    public ResponseEntity<List<MaintenanceScheduleResponse>> getOverdueMaintenance() {
+        List<MaintenanceScheduleResponse> responses = scheduleRepository.findByStatus(ScheduleStatus.OVERDUE).stream()
+                .map(MaintenanceScheduleResponse::fromEntity)
+                .collect(Collectors.toList());
+        return ResponseEntity.ok(responses);
     }
 
     @GetMapping("/vehicle/{vehicleId}")
-    public ResponseEntity<List<MaintenanceRecord>> getVehicleMaintenance(@PathVariable Long vehicleId) {
-        return ResponseEntity.ok(recordRepository.findByVehicleId(vehicleId));
+    @PreAuthorize("hasAnyRole('FLEET_MANAGER', 'ADMIN', 'MECHANIC')")
+    public ResponseEntity<List<MaintenanceRecordResponse>> getVehicleMaintenance(@PathVariable Long vehicleId) {
+        List<MaintenanceRecordResponse> responses = recordRepository.findByVehicleId(vehicleId).stream()
+                .map(MaintenanceRecordResponse::fromEntity)
+                .collect(Collectors.toList());
+        return ResponseEntity.ok(responses);
     }
 }

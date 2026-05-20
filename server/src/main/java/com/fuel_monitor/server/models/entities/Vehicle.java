@@ -39,11 +39,14 @@ public class Vehicle {
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private FuelType fuelType; // DIESEL, PETROL, CNG, EV
-
     @Column(nullable = false)
     private Double odometerReading;
 
+    @Column(nullable = false)
+    private Double totalValue;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private VehicleStatus status = VehicleStatus.ACTIVE; // Default lifecycle starts at ACTIVE
+    @Builder.Default
+    private VehicleStatus status = VehicleStatus.ACTIVE;
 }

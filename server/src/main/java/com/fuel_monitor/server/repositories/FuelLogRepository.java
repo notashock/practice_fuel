@@ -20,4 +20,7 @@ public interface FuelLogRepository extends JpaRepository<FuelLog, Long> {
 
     // To validate odometer readings are strictly increasing
     Optional<FuelLog> findFirstByVehicleIdOrderByOdometerAtRefillDesc(Long vehicleId);
+
+    @Query("SELECT SUM(fl.fuelCost) FROM FuelLog fl WHERE fl.vehicle.id = :vehicleId AND fl.refillDate >= :startDate")
+    Double sumFuelCostByVehicleAndDateRange(@Param("vehicleId") Long vehicleId, @Param("startDate") java.time.LocalDateTime startDate);
 }

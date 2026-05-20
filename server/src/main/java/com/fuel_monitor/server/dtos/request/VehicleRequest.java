@@ -17,4 +17,5 @@ public class VehicleRequest {
     private Integer yearOfManufacture;
     private FuelType fuelType;
     private Double odometerReading;
+    private Double totalValue;
 }
