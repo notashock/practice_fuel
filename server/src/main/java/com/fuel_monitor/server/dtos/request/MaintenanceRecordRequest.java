@@ -10,11 +10,8 @@ import lombok.*;
 @AllArgsConstructor
 public class MaintenanceRecordRequest {
     private Long vehicleId;
-    @JsonProperty("maintenanceType")
     private ServiceType serviceType;
-    @JsonProperty("maintenanceCost")
     private Double cost;
     private String partsReplaced;
-    @JsonProperty("description")
     private String remarks;
 }

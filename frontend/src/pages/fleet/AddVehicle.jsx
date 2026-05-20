@@ -16,6 +16,7 @@ export default function AddVehicle() {
     yearOfManufacture: "",
     fuelType: "",
     odometerReading: "",
+    totalValue: "",
   });
 
   const [loading, setLoading] = useState(false);
@@ -63,6 +64,7 @@ export default function AddVehicle() {
         ...formData,
         odometerReading: Number(formData.odometerReading),
         yearOfManufacture: Number(formData.yearOfManufacture),
+        totalValue: Number(formData.totalValue),
       });
 
       setSuccess("Vehicle registered successfully");
@@ -223,6 +225,22 @@ export default function AddVehicle() {
               type="number"
               name="odometerReading"
               value={formData.odometerReading}
+              onChange={handleChange}
+              className="w-full border p-3 rounded-lg"
+              required
+            />
+          </div>
+
+          <div className="md:col-span-2">
+            <label className="block mb-2 font-medium">
+              Total Vehicle Value (₹)
+            </label>
+
+            <input
+              type="number"
+              name="totalValue"
+              placeholder="e.g., 1500000"
+              value={formData.totalValue}
               onChange={handleChange}
               className="w-full border p-3 rounded-lg"
               required

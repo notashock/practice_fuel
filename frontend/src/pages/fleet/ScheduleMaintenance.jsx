@@ -82,20 +82,11 @@ export default function ScheduleMaintenance() {
       setLoading(true);
 
       await API.post(
-        "/maintenance/schedule",
+        `/maintenance/schedule?vehicleId=${Number(formData.vehicleId)}`,
         {
-          vehicleId: Number(formData.vehicleId),
-
           scheduleType: formData.scheduleType,
-
-          serviceIntervalKM: Number(
-            formData.serviceIntervalKM
-          ),
-
-          lastServiceKM: Number(
-            formData.lastServiceKM
-          ),
-
+          serviceIntervalKM: Number(formData.serviceIntervalKM),
+          lastServiceKM: Number(formData.lastServiceKM),
           nextServiceDueKM,
         }
       );
@@ -205,12 +196,8 @@ export default function ScheduleMaintenance() {
                 PREVENTIVE
               </option>
 
-              <option value="BREAKDOWN">
-                BREAKDOWN
-              </option>
-
-              <option value="INSPECTION">
-                INSPECTION
+              <option value="REPAIR">
+                REPAIR
               </option>
 
             </select>

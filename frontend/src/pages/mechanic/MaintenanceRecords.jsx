@@ -64,11 +64,11 @@ export default function MaintenanceRecords() {
     // Validation
 
     if (
-      Number(formData.maintenanceCost) < 20
+      Number(formData.maintenanceCost) < 70
     ) {
 
       setError(
-        "Maintenance cost must be at least 20"
+        "Maintenance cost must be at least 70"
       );
 
       return;
@@ -79,26 +79,12 @@ export default function MaintenanceRecords() {
       setLoading(true);
 
       await API.post(
-
-        `/maintenance/records?vehicleId=${formData.vehicleId}`,
-
+        `/maintenance/records?vehicleId=${Number(formData.vehicleId)}`,
         {
-
-          maintenanceType:
-            formData.maintenanceType,
-
-          description:
-            formData.description,
-
-          partsReplaced:
-            formData.partsReplaced,
-
-          maintenanceCost: Number(
-            formData.maintenanceCost
-          ),
-
-          serviceDate:
-            formData.serviceDate,
+          serviceType: formData.maintenanceType,
+          remarks: formData.description,
+          partsReplaced: formData.partsReplaced,
+          cost: Number(formData.maintenanceCost),
         }
       );
 

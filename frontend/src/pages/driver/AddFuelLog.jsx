@@ -82,22 +82,12 @@ export default function AddFuelLog() {
       setLoading(true);
 
       await API.post(
-        "/fuel-logs",
+        `/fuel-logs/vehicle/${formData.vehicleId}`,
         {
-          vehicleId: Number(formData.vehicleId),
-
-          fuelAmountLiters: Number(
-            formData.fuelAmountLiters
-          ),
-
+          fuelAmountLiters: Number(formData.fuelAmountLiters),
           fuelCost: Number(formData.fuelCost),
-
-          odometerAtRefill: Number(
-            formData.odometerAtRefill
-          ),
-
+          odometerAtRefill: Number(formData.odometerAtRefill),
           fuelType: formData.fuelType,
-
           receiptUrl: formData.receiptUrl,
         }
       );

@@ -118,8 +118,7 @@ export default function Issues() {
 
                 <h2 className="text-xl font-bold">
                   {
-                    issue.vehicle
-                      ?.registrationNumber
+                  issue.vehicleRegistrationNumber
                   }
                 </h2>
 
@@ -173,7 +172,7 @@ export default function Issues() {
                 </span>
 
                 {" "}
-                {issue.reportedBy?.name}
+                {issue.reportedByName}
               </p>
 
               <p>

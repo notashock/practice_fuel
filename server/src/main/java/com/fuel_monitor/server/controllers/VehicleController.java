@@ -60,6 +60,14 @@ public class VehicleController {
         return ResponseEntity.ok(responses);
     }
 
+    @GetMapping("/{id}")
+    @PreAuthorize("hasAnyRole('FLEET_MANAGER', 'ADMIN', 'MECHANIC', 'DRIVER')")
+    public ResponseEntity<VehicleResponse> getVehicleById(@PathVariable Long id) {
+        Vehicle vehicle = vehicleRepository.findById(id)
+                .orElseThrow(() -> new BusinessRuleException("Vehicle not found"));
+        return ResponseEntity.ok(VehicleResponse.fromEntity(vehicle));
+    }
+
     @PutMapping("/{id}/odometer")
     @PreAuthorize("hasRole('FLEET_MANAGER')")
     public ResponseEntity<VehicleResponse> updateOdometer(@PathVariable Long id, @RequestParam Double reading) {

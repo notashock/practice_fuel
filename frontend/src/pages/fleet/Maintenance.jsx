@@ -104,10 +104,7 @@ const [selectedMaintenance, setSelectedMaintenance] = useState(null);
               >
 
                 <td className="p-4">
-                  {
-                    maintenance.vehicle
-                      ?.registrationNumber
-                  }
+                  {maintenance.vehicleRegistrationNumber}
                 </td>
 
                 <td className="p-4">

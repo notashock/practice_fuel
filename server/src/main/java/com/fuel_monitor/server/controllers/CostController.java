@@ -13,7 +13,9 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/costs")
@@ -59,5 +61,14 @@ public class CostController {
         summary.put("totalMaintenanceCost", totalMaintenanceCost != null ? totalMaintenanceCost : 0.0);
 
         return ResponseEntity.ok(summary);
+    }
+
+    @GetMapping("/vehicle/{vehicleId}")
+    @PreAuthorize("hasAnyRole('FLEET_MANAGER', 'ADMIN')")
+    public ResponseEntity<List<VehicleCostResponse>> getVehicleCosts(@PathVariable Long vehicleId) {
+        List<VehicleCostResponse> responses = costRepository.findByVehicleId(vehicleId).stream()
+                .map(VehicleCostResponse::fromEntity)
+                .collect(Collectors.toList());
+        return ResponseEntity.ok(responses);
     }
 }

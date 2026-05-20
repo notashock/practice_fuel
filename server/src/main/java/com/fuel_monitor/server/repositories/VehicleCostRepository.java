@@ -19,4 +19,6 @@ public interface VehicleCostRepository extends JpaRepository<VehicleCost, Long> 
             @Param("costType") CostType costType,
             @Param("year") int year
     );
+
+    java.util.List<VehicleCost> findByVehicleId(Long vehicleId);
 }

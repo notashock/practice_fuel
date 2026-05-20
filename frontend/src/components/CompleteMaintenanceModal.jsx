@@ -54,10 +54,7 @@ export default function CompleteMaintenanceModal({
 
           <span className="font-semibold">
             {" "}
-            {
-              maintenance.vehicle
-                ?.registrationNumber
-            }
+            {maintenance.vehicleRegistrationNumber}
           </span>
 
           {" "}as completed?
