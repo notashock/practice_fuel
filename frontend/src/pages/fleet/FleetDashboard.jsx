@@ -9,7 +9,7 @@ export default function FleetDashboard() {
 
   const [maintenance, setMaintenance] = useState([]);
 
-  const [costSummary, setCostSummary] = useState([]);
+  const [costSummary, setCostSummary] = useState(null);
 
   const [loading, setLoading] = useState(true);
 
@@ -76,10 +76,7 @@ export default function FleetDashboard() {
 
   // Cost Calculation
 
-  const totalCost = costSummary.reduce(
-    (acc, item) => acc + item.amount,
-    0
-  );
+  const totalCost = costSummary?.totalMaintenanceCost ?? 0;
 
   if (loading) {
 
@@ -200,8 +197,7 @@ export default function FleetDashboard() {
 
                       <h3 className="font-semibold">
                         {
-                          item.vehicle
-                            ?.registrationNumber
+                          item.vehicleRegistrationNumber
                         }
                       </h3>
 
@@ -248,46 +244,12 @@ export default function FleetDashboard() {
           <div className="mb-6">
 
             <p className="text-gray-500">
-              Total Fleet Expenses
+              Total Maintenance Expenses ({costSummary?.year ?? new Date().getFullYear()})
             </p>
 
             <h2 className="text-4xl font-bold mt-2 text-blue-600">
               ₹ {totalCost}
             </h2>
-
-          </div>
-
-          <div className="space-y-4">
-
-            {costSummary.map((cost) => (
-
-              <div
-                key={cost.id}
-                className="flex justify-between border-b pb-3"
-              >
-
-                <div>
-
-                  <h3 className="font-semibold">
-                    {
-                      cost.vehicle
-                        ?.registrationNumber
-                    }
-                  </h3>
-
-                  <p className="text-sm text-gray-500">
-                    {cost.costType}
-                  </p>
-
-                </div>
-
-                <p className="font-semibold">
-                  ₹ {cost.amount}
-                </p>
-
-              </div>
-
-            ))}
 
           </div>
 
