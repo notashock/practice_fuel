@@ -35,11 +35,8 @@ export default function UpdateOdometerModal({
       setLoading(true);
 
       await API.put(
-        `/vehicles/${vehicle.id}/odometer`,
-        {
-          odometerReading: Number(odometerReading),
-        }
-      );
+  `/vehicles/${vehicle.id}/odometer?reading=${odometerReading}`
+);
 
       onSuccess();
 

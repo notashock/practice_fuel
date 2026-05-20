@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 
 import DashboardLayout from "../../layouts/DashboardLayout";
+
 import API from "../../api/axios";
 
 export default function MaintenanceRecords() {
@@ -9,17 +10,21 @@ export default function MaintenanceRecords() {
 
   const [loading, setLoading] = useState(false);
 
-  const [error, setError] = useState("");
-
   const [success, setSuccess] = useState("");
 
+  const [error, setError] = useState("");
+
   const [formData, setFormData] = useState({
+
     vehicleId: "",
-    maintenanceType: "",
-    description: "",
+
+    serviceType: "",
+
+    cost: "",
+
     partsReplaced: "",
-    maintenanceCost: "",
-    serviceDate: "",
+
+    remarks: "",
   });
 
   // Fetch Vehicles
@@ -42,33 +47,34 @@ export default function MaintenanceRecords() {
     fetchVehicles();
   }, []);
 
-  // Handle Change
+  // Handle Input
 
   const handleChange = (e) => {
 
     setFormData({
+
       ...formData,
+
       [e.target.name]: e.target.value,
     });
   };
 
-  // Submit
+  // Submit Maintenance Record
 
   const handleSubmit = async (e) => {
 
     e.preventDefault();
 
     setError("");
+
     setSuccess("");
 
     // Validation
 
-    if (
-      Number(formData.maintenanceCost) < 20
-    ) {
+    if (Number(formData.cost) < 70) {
 
       setError(
-        "Maintenance cost must be at least 20"
+        "Maintenance cost must be greater than or equal to 70"
       );
 
       return;
@@ -80,25 +86,23 @@ export default function MaintenanceRecords() {
 
       await API.post(
 
-        `/maintenance/records?vehicleId=${formData.vehicleId}`,
+        "/maintenance/records",
 
         {
 
-          maintenanceType:
-            formData.maintenanceType,
+          vehicleId: Number(
+            formData.vehicleId
+          ),
 
-          description:
-            formData.description,
+          serviceType:
+            formData.serviceType,
+
+          cost: Number(formData.cost),
 
           partsReplaced:
             formData.partsReplaced,
 
-          maintenanceCost: Number(
-            formData.maintenanceCost
-          ),
-
-          serviceDate:
-            formData.serviceDate,
+          remarks: formData.remarks,
         }
       );
 
@@ -107,19 +111,25 @@ export default function MaintenanceRecords() {
       );
 
       setFormData({
+
         vehicleId: "",
-        maintenanceType: "",
-        description: "",
+
+        serviceType: "",
+
+        cost: "",
+
         partsReplaced: "",
-        maintenanceCost: "",
-        serviceDate: "",
+
+        remarks: "",
       });
 
     } catch (err) {
 
       setError(
+
         err.response?.data?.message ||
-        "Failed to save maintenance record"
+
+        "Failed to add maintenance record"
       );
 
     } finally {
@@ -132,15 +142,23 @@ export default function MaintenanceRecords() {
 
     <DashboardLayout>
 
-      <div className="max-w-5xl mx-auto bg-white rounded-xl shadow-md p-8">
+      <div className="max-w-4xl mx-auto bg-white rounded-xl shadow-md p-8">
 
-        <h1 className="text-3xl font-bold mb-6">
-          Maintenance Records
-        </h1>
+        {/* Header */}
 
-        <p className="text-gray-500 mb-8">
-          Record completed maintenance and repairs
-        </p>
+        <div className="mb-8">
+
+          <h1 className="text-3xl font-bold">
+            Maintenance Records
+          </h1>
+
+          <p className="text-gray-500 mt-1">
+            Record vehicle maintenance performed
+          </p>
+
+        </div>
+
+        {/* Alerts */}
 
         {error && (
 
@@ -162,9 +180,11 @@ export default function MaintenanceRecords() {
 
         )}
 
+        {/* Form */}
+
         <form
           onSubmit={handleSubmit}
-          className="grid grid-cols-1 md:grid-cols-2 gap-5"
+          className="space-y-6"
         >
 
           {/* Vehicle */}
@@ -172,7 +192,7 @@ export default function MaintenanceRecords() {
           <div>
 
             <label className="block mb-2 font-medium">
-              Vehicle
+              Select Vehicle
             </label>
 
             <select
@@ -184,7 +204,7 @@ export default function MaintenanceRecords() {
             >
 
               <option value="">
-                Select Vehicle
+                Choose Vehicle
               </option>
 
               {vehicles.map((vehicle) => (
@@ -202,25 +222,25 @@ export default function MaintenanceRecords() {
 
           </div>
 
-          {/* Maintenance Type */}
+          {/* Service Type */}
 
           <div>
 
             <label className="block mb-2 font-medium">
-              Maintenance Type
+              Service Type
             </label>
 
             <select
-              name="maintenanceType"
-              value={formData.maintenanceType}
-              onChange={handleChange}
-              className="w-full border p-3 rounded-lg"
-              required
-            >
+  name="serviceType"
+  value={formData.serviceType}
+  onChange={handleChange}
+  className="w-full border p-3 rounded-lg"
+  required
+>
 
-              <option value="">
-                Select Type
-              </option>
+  <option value="">
+    Choose Service Type
+  </option>
 
               <option value="OIL_CHANGE">
                 OIL_CHANGE
@@ -242,7 +262,15 @@ export default function MaintenanceRecords() {
                 GENERAL
               </option>
 
-            </select>
+  <option value="TIRE_ROTATION">
+    Tire Rotation
+  </option>
+
+  <option value="OIL_CHANGE">
+    Oil Change
+  </option>
+
+</select>
 
           </div>
 
@@ -256,8 +284,8 @@ export default function MaintenanceRecords() {
 
             <input
               type="number"
-              name="maintenanceCost"
-              value={formData.maintenanceCost}
+              name="cost"
+              value={formData.cost}
               onChange={handleChange}
               placeholder="Enter maintenance cost"
               className="w-full border p-3 rounded-lg"
@@ -266,28 +294,9 @@ export default function MaintenanceRecords() {
 
           </div>
 
-          {/* Service Date */}
-
-          <div>
-
-            <label className="block mb-2 font-medium">
-              Service Date
-            </label>
-
-            <input
-              type="date"
-              name="serviceDate"
-              value={formData.serviceDate}
-              onChange={handleChange}
-              className="w-full border p-3 rounded-lg"
-              required
-            />
-
-          </div>
-
           {/* Parts Replaced */}
 
-          <div className="md:col-span-2">
+          <div>
 
             <label className="block mb-2 font-medium">
               Parts Replaced
@@ -298,47 +307,70 @@ export default function MaintenanceRecords() {
               name="partsReplaced"
               value={formData.partsReplaced}
               onChange={handleChange}
-              placeholder="Brake pads, filters, tires..."
+              placeholder="Enter replaced parts"
               className="w-full border p-3 rounded-lg"
             />
 
           </div>
 
-          {/* Description */}
+          {/* Remarks */}
 
-          <div className="md:col-span-2">
+          <div>
 
             <label className="block mb-2 font-medium">
-              Description
+              Remarks
             </label>
 
             <textarea
-              name="description"
-              value={formData.description}
+              name="remarks"
+              value={formData.remarks}
               onChange={handleChange}
-              rows="5"
-              placeholder="Describe maintenance performed..."
+              placeholder="Additional remarks"
+              rows="4"
               className="w-full border p-3 rounded-lg"
-              required
             />
 
           </div>
 
-          {/* Button */}
+          {/* Rules */}
 
-          <div className="md:col-span-2">
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
 
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-lg"
-            >
-              {loading
-                ? "Saving..."
-                : "Save Maintenance Record"}
-            </button>
+            <h3 className="font-semibold text-blue-700 mb-2">
+              Maintenance Rules
+            </h3>
+
+            <ul className="text-sm text-gray-700 space-y-1">
+
+              <li>
+                • Maintenance cost must be ≥ 70
+              </li>
+
+              <li>
+                • Maintenance automatically generates vehicle cost records
+              </li>
+
+              <li>
+                • Mechanic user will be recorded automatically
+              </li>
+
+            </ul>
 
           </div>
+
+          {/* Submit */}
+
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-lg"
+          >
+
+            {loading
+              ? "Saving..."
+              : "Add Maintenance Record"}
+
+          </button>
 
         </form>
 
@@ -346,4 +378,4 @@ export default function MaintenanceRecords() {
 
     </DashboardLayout>
   );
-}
+} 
