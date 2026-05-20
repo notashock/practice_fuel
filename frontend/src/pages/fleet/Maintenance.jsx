@@ -4,12 +4,15 @@ import DashboardLayout from "../../layouts/DashboardLayout";
 import API from "../../api/axios";
 import { useNavigate } from "react-router-dom";
 import CompleteMaintenanceModal from "../../components/CompleteMaintenanceModal";
+import { useAuth } from "../../context/AuthContext";
 export default function Maintenance() {
 
   const [maintenances, setMaintenances] = useState([]);
 
   const [loading, setLoading] = useState(true);
   const [showCompleteModal, setShowCompleteModal] = useState(false);
+  const { user } = useAuth();
+  const isFleetManager = user?.role === "FLEET_MANAGER";
 
 const [selectedMaintenance, setSelectedMaintenance] = useState(null);
  const navigate = useNavigate();
@@ -145,7 +148,8 @@ const [selectedMaintenance, setSelectedMaintenance] = useState(null);
 
                 <td className="p-4 flex gap-2">
 
-                 <button
+                 {isFleetManager && (
+                   <button
 
   onClick={() => {
     setSelectedMaintenance(maintenance);
@@ -165,8 +169,9 @@ const [selectedMaintenance, setSelectedMaintenance] = useState(null);
     }
   `}
 >
-  Complete
+  Approve Completion
 </button>
+                 )}
 
                 </td>
 

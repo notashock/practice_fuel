@@ -4,12 +4,15 @@ import API from "../../api/axios";
 import { useNavigate } from "react-router-dom";
 import UpdateOdometerModal from "../../components/UpdateOdometerModal";
 import RetireVehicleModal from "../../components/RetireVehicleModal";
+import { useAuth } from "../../context/AuthContext";
 
 export default function Vehicles() {
 
   const [vehicles, setVehicles] = useState([]);
   const [selectedVehicle, setSelectedVehicle] = useState(null);
   const [showRetireModal, setShowRetireModal] = useState(false);
+  const { user } = useAuth();
+  const isFleetManager = user?.role === "FLEET_MANAGER";
 
 const [retireVehicle, setRetireVehicle] = useState(null);
 
@@ -149,7 +152,8 @@ const [showModal, setShowModal] = useState(false);
   Update KM
 </button>
 
-                 <button
+                 {isFleetManager && (
+                   <button
 
   onClick={() => {
     setRetireVehicle(vehicle);
@@ -167,8 +171,9 @@ const [showModal, setShowModal] = useState(false);
     }
   `}
 >
-  Retire
+  Retire Vehicle
 </button>
+                 )}
 
                 </td>
 
