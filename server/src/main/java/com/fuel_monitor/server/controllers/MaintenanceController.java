@@ -45,10 +45,12 @@ public class MaintenanceController {
 
     @PostMapping("/records")
     public ResponseEntity<MaintenanceRecord> recordMaintenance(
+            @RequestParam Long vehicleId, // <-- Extracted from the query string
             @RequestBody MaintenanceRecordRequest request,
             @AuthenticationPrincipal User mechanic
     ) {
-        Vehicle vehicle = vehicleRepository.findById(request.getVehicleId())
+        // Uses the URL parameter instead of the request body
+        Vehicle vehicle = vehicleRepository.findById(vehicleId)
                 .orElseThrow(() -> new BusinessRuleException("Vehicle not found"));
 
         if (request.getCost() < 70) {
