@@ -9,8 +9,6 @@ export default function Costs() {
 
   const [selectedVehicle, setSelectedVehicle] = useState("");
 
-  const [costs, setCosts] = useState([]);
-
   const [summary, setSummary] = useState(null);
 
   const [loading, setLoading] = useState(false);
@@ -37,32 +35,14 @@ export default function Costs() {
 
     try {
 
+      setLoading(true);
+
       const response = await API.get(
 
         `/costs/summary?vehicleId=${vehicleId}&year=${new Date().getFullYear()}`
       );
 
       setSummary(response.data);
-
-    } catch (error) {
-
-      console.log(error);
-    }
-  };
-
-  // Fetch Vehicle Costs
-
-  const fetchVehicleCosts = async (vehicleId) => {
-
-    try {
-
-      setLoading(true);
-
-      const response = await API.get(
-        `/costs/vehicle/${vehicleId}`
-      );
-
-      setCosts(response.data);
 
     } catch (error) {
 
@@ -80,6 +60,8 @@ export default function Costs() {
 
   }, []);
 
+  // Vehicle Change
+
   const handleVehicleChange = (e) => {
 
     const vehicleId = e.target.value;
@@ -88,20 +70,14 @@ export default function Costs() {
 
     if (vehicleId) {
 
-      fetchVehicleCosts(vehicleId);
-
       fetchSummary(vehicleId);
     }
   };
 
   // Total Expenses
 
-  const totalExpenses = costs.reduce(
-
-    (acc, item) => acc + item.amount,
-
-    0
-  );
+  const totalExpenses =
+    summary?.totalMaintenanceCost || 0;
 
   return (
 
@@ -116,7 +92,7 @@ export default function Costs() {
         </h1>
 
         <p className="text-gray-500 mt-1">
-          Monitor fleet expenses and vehicle costs
+          Monitor fleet maintenance expenses
         </p>
 
       </div>
@@ -128,7 +104,7 @@ export default function Costs() {
         <div className="bg-white p-6 rounded-xl shadow-md">
 
           <p className="text-gray-500">
-            Total Vehicle Expenses
+            Total Expenses
           </p>
 
           <h2 className="text-4xl font-bold text-blue-600 mt-2">
@@ -140,11 +116,11 @@ export default function Costs() {
         <div className="bg-white p-6 rounded-xl shadow-md">
 
           <p className="text-gray-500">
-            Expense Records
+            Summary Records
           </p>
 
           <h2 className="text-4xl font-bold mt-2">
-            {costs.length}
+            {summary ? 1 : 0}
           </h2>
 
         </div>
@@ -193,123 +169,6 @@ export default function Costs() {
           ))}
 
         </select>
-
-      </div>
-
-      {/* Vehicle Costs */}
-
-      <div className="bg-white rounded-xl shadow-md overflow-x-auto mb-8">
-
-        <div className="p-6 border-b">
-
-          <h2 className="text-2xl font-bold">
-            Vehicle Expense History
-          </h2>
-
-        </div>
-
-        <table className="w-full">
-
-          <thead className="bg-gray-100">
-
-            <tr>
-
-              <th className="p-4 text-left">
-                Cost Type
-              </th>
-
-              <th className="p-4 text-left">
-                Amount
-              </th>
-
-              <th className="p-4 text-left">
-                Recorded At
-              </th>
-
-              <th className="p-4 text-left">
-                Remarks
-              </th>
-
-            </tr>
-
-          </thead>
-
-          <tbody>
-
-            {costs.map((cost) => (
-
-              <tr
-                key={cost.id}
-                className="border-b hover:bg-gray-50"
-              >
-
-                <td className="p-4">
-
-                  <span
-                    className={`px-3 py-1 rounded-full text-white text-sm
-
-                      ${
-                        cost.costType === "FUEL"
-                          ? "bg-blue-500"
-
-                          : cost.costType === "MAINTENANCE"
-                          ? "bg-yellow-500"
-
-                          : cost.costType === "ACCIDENT"
-                          ? "bg-red-500"
-
-                          : "bg-green-500"
-                      }
-                    `}
-                  >
-                    {cost.costType}
-                  </span>
-
-                </td>
-
-                <td className="p-4">
-                  ₹ {cost.amount}
-                </td>
-
-                <td className="p-4">
-
-                  {
-                    new Date(
-                      cost.recordedAt
-                    ).toLocaleDateString()
-                  }
-
-                </td>
-
-                <td className="p-4">
-                  {cost.remarks}
-                </td>
-
-              </tr>
-
-            ))}
-
-          </tbody>
-
-        </table>
-
-        {!loading &&
-          costs.length === 0 &&
-          selectedVehicle && (
-
-          <p className="p-6 text-center text-gray-500">
-            No cost records found
-          </p>
-
-        )}
-
-        {loading && (
-
-          <p className="p-6 text-center">
-            Loading cost records...
-          </p>
-
-        )}
 
       </div>
 
@@ -363,6 +222,36 @@ export default function Costs() {
 
                 <td className="p-4 font-semibold">
                   ₹ {summary.totalMaintenanceCost}
+                </td>
+
+              </tr>
+
+            )}
+
+            {!loading && !summary && (
+
+              <tr>
+
+                <td
+                  colSpan="3"
+                  className="text-center p-6 text-gray-500"
+                >
+                  Select a vehicle to view summary
+                </td>
+
+              </tr>
+
+            )}
+
+            {loading && (
+
+              <tr>
+
+                <td
+                  colSpan="3"
+                  className="text-center p-6"
+                >
+                  Loading summary...
                 </td>
 
               </tr>

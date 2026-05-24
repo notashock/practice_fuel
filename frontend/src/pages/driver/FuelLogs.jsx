@@ -1,19 +1,33 @@
 import { useEffect, useState } from "react";
 
 import DashboardLayout from "../../layouts/DashboardLayout";
+
 import API from "../../api/axios";
-import { useNavigate } from "react-router-dom";
+
 export default function FuelLogs() {
 
   const [vehicles, setVehicles] = useState([]);
 
-  const [selectedVehicle, setSelectedVehicle] = useState("");
-
-  const [fuelLogs, setFuelLogs] = useState([]);
-
   const [loading, setLoading] = useState(false);
-    const navigate = useNavigate();
-  // Fetch Vehicles
+
+  const [success, setSuccess] = useState("");
+
+  const [error, setError] = useState("");
+
+  const [formData, setFormData] = useState({
+
+    vehicleId: "",
+
+    fuelAmountLiters: "",
+
+    fuelCost: "",
+
+    odometerAtRefill: "",
+
+    fuelType: "",
+
+    receiptUrl: "",
+  });
 
   const fetchVehicles = async () => {
 
@@ -29,23 +43,83 @@ export default function FuelLogs() {
     }
   };
 
-  // Fetch Fuel Logs
+  useEffect(() => {
+    fetchVehicles();
+  }, []);
 
-  const fetchFuelLogs = async (vehicleId) => {
+  const handleChange = (e) => {
+
+    setFormData({
+
+      ...formData,
+
+      [e.target.name]: e.target.value,
+    });
+  };
+
+  const handleSubmit = async (e) => {
+
+    e.preventDefault();
+
+    setError("");
+
+    setSuccess("");
 
     try {
 
       setLoading(true);
 
-      const response = await API.get(
-        `/fuel-logs/vehicle/${vehicleId}`
+      await API.post(
+
+        `/fuel-logs/vehicle/${formData.vehicleId}`,
+
+        {
+
+          fuelAmountLiters: Number(
+            formData.fuelAmountLiters
+          ),
+
+          fuelCost: Number(
+            formData.fuelCost
+          ),
+
+          odometerAtRefill: Number(
+            formData.odometerAtRefill
+          ),
+
+          fuelType: formData.fuelType,
+
+          receiptUrl: formData.receiptUrl,
+        }
       );
 
-      setFuelLogs(response.data);
+      setSuccess(
+        "Fuel log added successfully"
+      );
 
-    } catch (error) {
+      setFormData({
 
-      console.log(error);
+        vehicleId: "",
+
+        fuelAmountLiters: "",
+
+        fuelCost: "",
+
+        odometerAtRefill: "",
+
+        fuelType: "",
+
+        receiptUrl: "",
+      });
+
+    } catch (err) {
+
+      setError(
+
+        err.response?.data?.message ||
+
+        "Failed to log fuel"
+      );
 
     } finally {
 
@@ -53,197 +127,204 @@ export default function FuelLogs() {
     }
   };
 
-  useEffect(() => {
-    fetchVehicles();
-  }, []);
-
-  const handleVehicleChange = (e) => {
-
-    const vehicleId = e.target.value;
-
-    setSelectedVehicle(vehicleId);
-
-    if (vehicleId) {
-      fetchFuelLogs(vehicleId);
-    }
-  };
-
   return (
 
     <DashboardLayout>
 
-      <div className="flex justify-between items-center mb-6">
+      <div className="max-w-4xl mx-auto bg-white rounded-xl shadow-md p-8">
 
-        <div>
+        <div className="mb-8">
 
           <h1 className="text-3xl font-bold">
             Fuel Logs
           </h1>
-          <button
-  onClick={() =>
-    navigate("/driver/fuel-logs/add")
-  }
-  className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2 rounded-lg"
->
-  Add Fuel Log
-</button>
 
           <p className="text-gray-500 mt-1">
-            Track fuel refill history
+            Record vehicle fuel refill
           </p>
 
         </div>
 
-      </div>
+        {error && (
 
-      {/* Vehicle Selection */}
+          <div className="bg-red-100 text-red-600 p-3 rounded-lg mb-5">
 
-      <div className="bg-white rounded-xl shadow-md p-6 mb-6">
+            {error}
 
-        <label className="block mb-3 font-medium">
-          Select Vehicle
-        </label>
+          </div>
 
-        <select
-          value={selectedVehicle}
-          onChange={handleVehicleChange}
-          className="w-full md:w-96 border p-3 rounded-lg"
+        )}
+
+        {success && (
+
+          <div className="bg-green-100 text-green-600 p-3 rounded-lg mb-5">
+
+            {success}
+
+          </div>
+
+        )}
+
+        <form
+          onSubmit={handleSubmit}
+          className="space-y-6"
         >
 
-          <option value="">
-            Choose Vehicle
-          </option>
+          {/* Vehicle */}
 
-          {vehicles.map((vehicle) => (
+          <div>
 
-            <option
-              key={vehicle.id}
-              value={vehicle.id}
+            <label className="block mb-2 font-medium">
+              Select Vehicle
+            </label>
+
+            <select
+              name="vehicleId"
+              value={formData.vehicleId}
+              onChange={handleChange}
+              className="w-full border p-3 rounded-lg"
+              required
             >
-              {vehicle.registrationNumber}
-            </option>
 
-          ))}
+              <option value="">
+                Choose Vehicle
+              </option>
 
-        </select>
+              {vehicles.map((vehicle) => (
 
-      </div>
+                <option
+                  key={vehicle.id}
+                  value={vehicle.id}
+                >
+                  {vehicle.registrationNumber}
+                </option>
 
-      {/* Fuel Logs Table */}
+              ))}
 
-      <div className="bg-white rounded-xl shadow-md overflow-x-auto">
+            </select>
 
-        <table className="w-full">
+          </div>
 
-          <thead className="bg-gray-200">
+          {/* Fuel Amount */}
 
-            <tr>
+          <div>
 
-              <th className="p-4 text-left">
-                Date
-              </th>
+            <label className="block mb-2 font-medium">
+              Fuel Amount (Liters)
+            </label>
 
-              <th className="p-4 text-left">
-                Fuel Type
-              </th>
+            <input
+              type="number"
+              name="fuelAmountLiters"
+              value={formData.fuelAmountLiters}
+              onChange={handleChange}
+              className="w-full border p-3 rounded-lg"
+              required
+            />
 
-              <th className="p-4 text-left">
-                Fuel Amount
-              </th>
+          </div>
 
-              <th className="p-4 text-left">
-                Fuel Cost
-              </th>
+          {/* Fuel Cost */}
 
-              <th className="p-4 text-left">
-                Odometer
-              </th>
+          <div>
 
-              <th className="p-4 text-left">
-                Receipt
-              </th>
+            <label className="block mb-2 font-medium">
+              Fuel Cost
+            </label>
 
-            </tr>
+            <input
+              type="number"
+              name="fuelCost"
+              value={formData.fuelCost}
+              onChange={handleChange}
+              className="w-full border p-3 rounded-lg"
+              required
+            />
 
-          </thead>
+          </div>
 
-          <tbody>
+          {/* Odometer */}
 
-            {fuelLogs.map((log) => (
+          <div>
 
-              <tr
-                key={log.id}
-                className="border-b hover:bg-gray-50"
-              >
+            <label className="block mb-2 font-medium">
+              Odometer Reading
+            </label>
 
-                <td className="p-4">
-                  {new Date(
-                    log.refillDate
-                  ).toLocaleDateString()}
-                </td>
+            <input
+              type="number"
+              name="odometerAtRefill"
+              value={formData.odometerAtRefill}
+              onChange={handleChange}
+              className="w-full border p-3 rounded-lg"
+              required
+            />
 
-                <td className="p-4">
-                  {log.fuelType}
-                </td>
+          </div>
 
-                <td className="p-4">
-                  {log.fuelAmountLiters} L
-                </td>
+          {/* Fuel Type */}
 
-                <td className="p-4">
-                  ₹ {log.fuelCost}
-                </td>
+          <div>
 
-                <td className="p-4">
-                  {log.odometerAtRefill} km
-                </td>
+            <label className="block mb-2 font-medium">
+              Fuel Type
+            </label>
 
-                <td className="p-4">
+            <select
+              name="fuelType"
+              value={formData.fuelType}
+              onChange={handleChange}
+              className="w-full border p-3 rounded-lg"
+              required
+            >
 
-                  {log.receiptUrl ? (
+              <option value="">
+                Choose Fuel Type
+              </option>
 
-                    <a
-                      href={log.receiptUrl}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="text-blue-600 hover:underline"
-                    >
-                      View Receipt
-                    </a>
+              <option value="PETROL">
+                Petrol
+              </option>
 
-                  ) : (
+              <option value="DIESEL">
+                Diesel
+              </option>
 
-                    <span className="text-gray-400">
-                      No Receipt
-                    </span>
+            </select>
 
-                  )}
+          </div>
 
-                </td>
+          {/* Receipt URL */}
 
-              </tr>
+          <div>
 
-            ))}
+            <label className="block mb-2 font-medium">
+              Receipt URL
+            </label>
 
-          </tbody>
+            <input
+              type="text"
+              name="receiptUrl"
+              value={formData.receiptUrl}
+              onChange={handleChange}
+              className="w-full border p-3 rounded-lg"
+            />
 
-        </table>
+          </div>
 
-        {loading && (
-          <p className="p-5 text-center">
-            Loading fuel logs...
-          </p>
-        )}
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-lg"
+          >
 
-        {!loading &&
-          fuelLogs.length === 0 &&
-          selectedVehicle && (
+            {loading
+              ? "Saving..."
+              : "Log Fuel"}
 
-          <p className="p-5 text-center text-gray-500">
-            No fuel logs found
-          </p>
+          </button>
 
-        )}
+        </form>
 
       </div>
 

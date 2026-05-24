@@ -3,6 +3,7 @@ package com.fuel_monitor.server.controllers;
 import com.fuel_monitor.server.dtos.request.LoginRequest;
 import com.fuel_monitor.server.dtos.request.RegisterRequest;
 import com.fuel_monitor.server.dtos.response.AuthResponse;
+import com.fuel_monitor.server.exceptions.BusinessRuleException;
 import com.fuel_monitor.server.models.entities.User;
 import com.fuel_monitor.server.repositories.UserRepository;
 import com.fuel_monitor.server.security.JwtService;
@@ -51,7 +52,7 @@ public class AuthController {
         );
 
         User user = userRepository.findByEmail(request.getEmail())
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new BusinessRuleException("User not found"));
         String jwtToken = jwtService.generateToken(user);
 
         return ResponseEntity.ok(AuthResponse.builder()

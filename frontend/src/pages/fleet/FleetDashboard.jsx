@@ -20,14 +20,11 @@ export default function FleetDashboard() {
       const [
         vehicleResponse,
         maintenanceResponse,
-        costResponse,
       ] = await Promise.all([
 
         API.get("/vehicles"),
 
         API.get("/maintenance/overdue"),
-
-        API.get("/costs/summary"),
 
       ]);
 
@@ -35,7 +32,20 @@ export default function FleetDashboard() {
 
       setMaintenance(maintenanceResponse.data);
 
-      setCostSummary(costResponse.data);
+      // Fetch Cost Summary
+
+      if (vehicleResponse.data.length > 0) {
+
+        const firstVehicleId =
+          vehicleResponse.data[0].id;
+
+        const summaryResponse = await API.get(
+
+          `/costs/summary?vehicleId=${firstVehicleId}&year=${new Date().getFullYear()}`
+        );
+
+        setCostSummary(summaryResponse.data);
+      }
 
     } catch (error) {
 
@@ -74,15 +84,19 @@ export default function FleetDashboard() {
     (item) => item.status === "OVERDUE"
   ).length;
 
-  // Cost Calculation
+  // Cost Summary
 
-  const totalCost = costSummary?.totalMaintenanceCost ?? 0;
+  const totalCost =
+    costSummary?.totalMaintenanceCost || 0;
 
   if (loading) {
 
     return (
+
       <DashboardLayout>
+
         <p>Loading dashboard...</p>
+
       </DashboardLayout>
     );
   }
@@ -90,6 +104,8 @@ export default function FleetDashboard() {
   return (
 
     <DashboardLayout>
+
+      {/* Header */}
 
       <div className="mb-8">
 
@@ -197,7 +213,8 @@ export default function FleetDashboard() {
 
                       <h3 className="font-semibold">
                         {
-                          item.vehicleRegistrationNumber
+                          item.vehicle
+                            ?.registrationNumber
                         }
                       </h3>
 
@@ -224,9 +241,11 @@ export default function FleetDashboard() {
               ))}
 
             {overdueMaintenance === 0 && (
+
               <p className="text-gray-500">
                 No overdue maintenance found
               </p>
+
             )}
 
           </div>
@@ -244,7 +263,7 @@ export default function FleetDashboard() {
           <div className="mb-6">
 
             <p className="text-gray-500">
-              Total Maintenance Expenses ({costSummary?.year ?? new Date().getFullYear()})
+              Total Maintenance Expenses
             </p>
 
             <h2 className="text-4xl font-bold mt-2 text-blue-600">
@@ -252,6 +271,34 @@ export default function FleetDashboard() {
             </h2>
 
           </div>
+
+          {costSummary && (
+
+            <div className="flex justify-between border-b pb-3">
+
+              <div>
+
+                <h3 className="font-semibold">
+                  Vehicle ID:
+                  {" "}
+                  {costSummary.vehicleId}
+                </h3>
+
+                <p className="text-sm text-gray-500">
+                  Year:
+                  {" "}
+                  {costSummary.year}
+                </p>
+
+              </div>
+
+              <p className="font-semibold">
+                ₹ {costSummary.totalMaintenanceCost}
+              </p>
+
+            </div>
+
+          )}
 
         </div>
 
